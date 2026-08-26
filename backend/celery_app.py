@@ -16,3 +16,13 @@ celery_app.conf.update(
     timezone="UTC",
     enable_utc=True,
 )
+
+# Force load T5 and sentence-transformer models when worker starts
+from summarization_service import load_model as load_summarizer
+from embedding_service import load_model as load_embedder
+
+@celery_app.on_after_configure.connect
+def setup_periodic_tasks(sender, **kwargs):
+    load_summarizer()
+    load_embedder()
+
