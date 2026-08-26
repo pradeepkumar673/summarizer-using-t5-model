@@ -18,6 +18,7 @@ import {
 import { useWorkspaceStore } from "../store/workspaceStore";
 import PdfPane from "../components/PdfPane";
 import NotesPane from "../components/NotesPane";
+import SearchBar from "../components/SearchBar";
 
 export default function DocumentViewer() {
   const { id } = useParams<{ id: string }>();
@@ -197,6 +198,7 @@ export default function DocumentViewer() {
             {doc.total_pages} pages &bull; status: {doc.status}
           </p>
         </div>
+        <SearchBar documentId={doc.id} />
         <div className="flex flex-wrap items-center gap-3">
           <Link
             to={`/documents/${doc.id}/notebook`}

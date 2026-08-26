@@ -6,14 +6,19 @@ export interface HighlightBox {
   box: BoundingBox;
 }
 
+interface FocusSearchResultPayload {
+  page: number;
+  box: BoundingBox | null;
+  noteId?: string | null;
+  noteLevel?: NoteLevel | null;
+}
+
 interface WorkspaceState {
   activeDocumentId: string | null;
   activeNoteId: string | null;
   activeHighlights: HighlightBox[];
   requestedNoteLevel: NoteLevel | null;
 
-  // Counter tokens used as useEffect triggers so clicking an already-active
-  // note or chunk still re-triggers smooth auto-scroll.
   highlightScrollToken: number;
   noteScrollToken: number;
 
@@ -24,6 +29,7 @@ interface WorkspaceState {
     level: NoteLevel,
     highlights: HighlightBox[]
   ) => void;
+  focusSearchResult: (payload: FocusSearchResultPayload) => void;
   clearSelection: () => void;
   reset: () => void;
 }
@@ -33,6 +39,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   activeNoteId: null,
   activeHighlights: [],
   requestedNoteLevel: null,
+
   highlightScrollToken: 0,
   noteScrollToken: 0,
 
@@ -63,6 +70,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set) => ({
       activeHighlights: highlights,
       requestedNoteLevel: level,
       noteScrollToken: state.noteScrollToken + 1,
+    })),
+
+  focusSearchResult: (payload) =>
+    set((state) => ({
+      activeHighlights: payload.box ? [{ page: payload.page, box: payload.box }] : [],
+      highlightScrollToken: state.highlightScrollToken + 1,
+      ...(payload.noteId
+        ? {
+            activeNoteId: payload.noteId,
+            requestedNoteLevel: payload.noteLevel ?? state.requestedNoteLevel,
+            noteScrollToken: state.noteScrollToken + 1,
+          }
+        : {}),
     })),
 
   clearSelection: () =>

@@ -71,6 +71,20 @@ export type HierarchyResult = {
   chapter: NotePublic[];
 };
 
+export type SearchSourceType = "chunk" | "note";
+
+export type SearchResult = {
+  source_type: SearchSourceType;
+  chunk_id: string | null;
+  note_id: string | null;
+  note_level: NoteLevel | null;
+  page_number: number;
+  paragraph_id: number | null;
+  text: string;
+  bounding_box: BoundingBox | null;
+  score: number;
+};
+
 export async function uploadDocument(
   file: File,
   onProgress: (percent: number) => void
@@ -143,5 +157,23 @@ export async function updateNote(
   payload: NoteUpdatePayload
 ): Promise<NotePublic> {
   const res = await api.patch<NotePublic>(`/api/notes/${noteId}`, payload);
+  return res.data;
+}
+
+export async function searchKeyword(id: string, q: string): Promise<SearchResult[]> {
+  const res = await api.get<SearchResult[]>(`/api/documents/${id}/search`, {
+    params: { q },
+  });
+  return res.data;
+}
+
+export async function searchSemantic(
+  id: string,
+  q: string,
+  topK = 8
+): Promise<SearchResult[]> {
+  const res = await api.get<SearchResult[]>(`/api/documents/${id}/search/semantic`, {
+    params: { q, top_k: topK },
+  });
   return res.data;
 }

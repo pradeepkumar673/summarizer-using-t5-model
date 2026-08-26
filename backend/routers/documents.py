@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from datetime import datetime, timezone
@@ -11,6 +12,8 @@ import hierarchy_service
 from config import settings
 from database import db
 from deps import get_current_user
+from embedding_service import encode
+from embedding_service import is_ready as embedder_is_ready
 from models import (
     ChunkPublic,
     DocumentDetail,
@@ -28,6 +31,9 @@ from preprocessing import clean_chunks, split_into_sentences
 from summarization_service import is_ready as summarizer_is_ready
 from summarization_service import summarize_text
 from topic_segmentation import segment_topics
+from vector_store import index_chunks
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -175,6 +181,27 @@ async def process_document(document_id: str, current_user: UserPublic = Depends(
         ).sort("order_index", 1).to_list(length=None)
 
     await db.documents.update_one({"_id": doc["_id"]}, {"$set": {"status": "segmented"}})
+
+    # STEP 9: (re)build the document's semantic-search index from the same
+    # cleaned/de-noised chunks the topic segmenter just used, so headers,
+    # footers, and page-number noise never pollute semantic search results.
+    if embedder_is_ready():
+        try:
+            texts = [c["text"] for c in cleaned]
+            embeddings = encode(texts)
+            index_chunks(str(doc["_id"]), cleaned, embeddings)
+        except Exception:
+            logger.exception(
+                "Failed to build semantic search index for document %s -- "
+                "keyword search will still work, semantic search will not.",
+                doc["_id"],
+            )
+    else:
+        logger.warning(
+            "Embedding model not ready yet -- skipped semantic indexing for "
+            "document %s. Re-run 'Segment Topics' once it's loaded.",
+            doc["_id"],
+        )
 
     return [topic_doc_to_public(t) for t in inserted_topics]
 

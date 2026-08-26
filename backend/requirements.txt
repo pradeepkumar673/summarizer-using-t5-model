@@ -13,3 +13,5 @@ spacy==3.7.5
 transformers==4.44.2
 sentencepiece==0.2.0
 torch==2.4.1
+sentence-transformers==3.0.1
+chromadb==0.5.5
