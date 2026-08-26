@@ -44,6 +44,7 @@ DocumentStatus = Literal[
     "queued",
     "extracting",
     "segmenting",
+    "segmented",
     "summarizing",
     "hierarchy",
     "embedding",
