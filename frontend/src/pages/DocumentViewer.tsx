@@ -245,6 +245,19 @@ export default function DocumentViewer() {
         </div>
       );
     }
+    if (status === "segmented") {
+      return (
+        <div className="border-b bg-emerald-50 px-6 py-3 text-sm text-emerald-800 flex items-center justify-between font-medium border-emerald-100">
+          <span>Topics segmented successfully! You can now click "Generate Notes" or "Force Restart Ingestion".</span>
+          <button
+            onClick={handleRetry}
+            className="text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-3 py-1.5 rounded transition-all shadow"
+          >
+            Force Restart Ingestion
+          </button>
+        </div>
+      );
+    }
     const stageMap: Record<string, string> = {
       queued: "Queued...",
       extracting: "Extracting text from PDF...",
@@ -341,21 +354,21 @@ export default function DocumentViewer() {
           </button>
           <button
             onClick={handleProcess}
-            disabled={processing || status !== "ready"}
+            disabled={processing || (status !== "ready" && status !== "segmented")}
             className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {processing ? "Segmenting topics..." : "Segment Topics"}
           </button>
           <button
             onClick={handleSummarize}
-            disabled={summarizing || status !== "ready"}
+            disabled={summarizing || (status !== "ready" && status !== "segmented")}
             className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {summarizing ? "Generating notes..." : "Generate Notes"}
           </button>
           <button
             onClick={handleBuildHierarchy}
-            disabled={buildingHierarchy || status !== "ready"}
+            disabled={buildingHierarchy || (status !== "ready" && status !== "segmented")}
             title="Rolls up existing paragraph notes into Topic, Page, and Chapter summaries"
             className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
