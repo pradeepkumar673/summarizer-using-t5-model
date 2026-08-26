@@ -7,6 +7,7 @@ import HealthCheck from "./pages/HealthCheck";
 import Upload from "./pages/Upload";
 import Documents from "./pages/Documents";
 import DocumentViewer from "./pages/DocumentViewer";
+import ExamEssentials from "./pages/ExamEssentials";
 import Notebook from "./pages/Notebook";
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
         <Route path="/documents" element={<Documents />} />
         <Route path="/documents/:id" element={<DocumentViewer />} />
         <Route path="/documents/:id/notebook" element={<Notebook />} />
+        <Route path="/documents/:id/exam-essentials" element={<ExamEssentials />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

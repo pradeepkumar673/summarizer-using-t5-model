@@ -9,6 +9,7 @@ from routers.auth import router as auth_router
 from routers.documents import router as documents_router
 from routers.notes import router as notes_router
 from routers.search import router as search_router
+from routers.exam_essentials import router as exam_router
 
 app = FastAPI(title="Traceable PDF Notes Platform API")
 
@@ -24,6 +25,7 @@ app.include_router(auth_router)
 app.include_router(documents_router)
 app.include_router(notes_router)
 app.include_router(search_router)
+app.include_router(exam_router)
 
 
 @app.on_event("startup")
@@ -41,6 +43,8 @@ async def create_indexes():
     await db.notes.create_index(
         [("text", "text"), ("edited_text", "text")], name="notes_text_search"
     )
+    # STEP 10: exam essentials index
+    await db.exam_essentials.create_index([("document_id", 1), ("category", 1)])
 
 
 @app.on_event("startup")

@@ -85,13 +85,32 @@ export type SearchResult = {
   score: number;
 };
 
+export type ExamCategory =
+  | "definition"
+  | "formula"
+  | "unit"
+  | "rule"
+  | "example"
+  | "exception";
+
+export type ExamEssential = {
+  id: string;
+  document_id: string;
+  category: ExamCategory;
+  text: string;
+  source_page: number;
+  source_bounding_box: BoundingBox | null;
+  created_at: string;
+};
+
+export type ExamEssentialsResult = Record<ExamCategory, ExamEssential[]>;
+
 export async function uploadDocument(
   file: File,
   onProgress: (percent: number) => void
 ): Promise<DocumentPublic> {
   const formData = new FormData();
   formData.append("file", file);
-
   const res = await api.post<DocumentPublic>("/api/documents/upload", formData, {
     headers: { "Content-Type": "multipart/form-data" },
     onUploadProgress: (event) => {
@@ -175,5 +194,23 @@ export async function searchSemantic(
   const res = await api.get<SearchResult[]>(`/api/documents/${id}/search/semantic`, {
     params: { q, top_k: topK },
   });
+  return res.data;
+}
+
+export async function generateExamEssentials(
+  id: string
+): Promise<ExamEssentialsResult> {
+  const res = await api.post<ExamEssentialsResult>(
+    `/api/documents/${id}/exam-essentials/generate`
+  );
+  return res.data;
+}
+
+export async function getExamEssentials(
+  id: string
+): Promise<ExamEssentialsResult> {
+  const res = await api.get<ExamEssentialsResult>(
+    `/api/documents/${id}/exam-essentials`
+  );
   return res.data;
 }

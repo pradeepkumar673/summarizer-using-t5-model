@@ -206,6 +206,12 @@ export default function DocumentViewer() {
           >
             My Notebook
           </Link>
+          <Link
+            to={`/documents/${doc.id}/exam-essentials`}
+            className="rounded-md border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+          >
+            Exam Essentials
+          </Link>
           <button
             onClick={handleProcess}
             disabled={processing}
