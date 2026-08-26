@@ -1,6 +1,6 @@
 import api from "./client";
 
-export type DocumentStatus = "processing" | "ready" | "failed";
+export type DocumentStatus = "processing" | "ready" | "segmented" | "failed";
 
 export type DocumentPublic = {
   id: string;
@@ -25,10 +25,21 @@ export type ChunkPublic = {
   paragraph_id: number;
   text: string;
   bounding_box: BoundingBox;
+  avg_font_size: number | null;
+  is_bold: boolean;
 };
 
 export type DocumentDetail = DocumentPublic & {
   chunks: ChunkPublic[];
+};
+
+export type TopicPublic = {
+  id: string;
+  document_id: string;
+  title: string;
+  order_index: number;
+  paragraph_ids: string[];
+  page_range: [number, number];
 };
 
 export async function uploadDocument(
@@ -61,4 +72,14 @@ export async function getDocument(id: string): Promise<DocumentDetail> {
 
 export function getDocumentFileUrl(id: string): string {
   return `http://localhost:8000/api/documents/${id}/file`;
+}
+
+export async function processDocument(id: string): Promise<TopicPublic[]> {
+  const res = await api.post<TopicPublic[]>(`/api/documents/${id}/process`);
+  return res.data;
+}
+
+export async function getTopics(id: string): Promise<TopicPublic[]> {
+  const res = await api.get<TopicPublic[]>(`/api/documents/${id}/topics`);
+  return res.data;
 }

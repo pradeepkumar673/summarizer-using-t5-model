@@ -43,7 +43,7 @@ def user_doc_to_public(doc: dict) -> UserPublic:
 
 # --- Document / chunk models ---
 
-DocumentStatus = Literal["processing", "ready", "failed"]
+DocumentStatus = Literal["processing", "ready", "segmented", "failed"]
 
 
 class BoundingBox(BaseModel):
@@ -60,6 +60,8 @@ class ChunkPublic(BaseModel):
     paragraph_id: int
     text: str
     bounding_box: BoundingBox
+    avg_font_size: float | None = None
+    is_bold: bool = False
 
 
 class DocumentPublic(BaseModel):
@@ -94,4 +96,28 @@ def chunk_doc_to_public(doc: dict) -> ChunkPublic:
         paragraph_id=doc["paragraph_id"],
         text=doc["text"],
         bounding_box=BoundingBox(**doc["bounding_box"]),
+        avg_font_size=doc.get("avg_font_size"),
+        is_bold=doc.get("is_bold", False),
+    )
+
+
+# --- Topic models ---
+
+class TopicPublic(BaseModel):
+    id: str
+    document_id: str
+    title: str
+    order_index: int
+    paragraph_ids: list[str]  # unique chunk IDs this topic was built from (traceable)
+    page_range: list[int]  # [min_page, max_page]
+
+
+def topic_doc_to_public(doc: dict) -> TopicPublic:
+    return TopicPublic(
+        id=str(doc["_id"]),
+        document_id=doc["document_id"],
+        title=doc["title"],
+        order_index=doc["order_index"],
+        paragraph_ids=doc["paragraph_ids"],
+        page_range=doc["page_range"],
     )

@@ -1,5 +1,7 @@
 import fitz  # PyMuPDF
 
+BOLD_FLAG = 1 << 4  # PyMuPDF span flags: bit 4 indicates bold
+
 
 def extract_blocks_from_pdf(file_path: str) -> tuple[int, list[dict]]:
     """
@@ -7,7 +9,9 @@ def extract_blocks_from_pdf(file_path: str) -> tuple[int, list[dict]]:
     PyMuPDF's structured dict extraction. Returns (total_pages, chunks).
 
     Each chunk dict has: page_number (1-indexed), paragraph_id (0-indexed
-    per page), text, bounding_box (x0, y0, x1, y1) in PDF point coordinates.
+    per page), text, bounding_box (x0, y0, x1, y1) in PDF point coordinates,
+    avg_font_size (character-length-weighted average, or None if unavailable),
+    is_bold (True if the majority of characters in the block are bold).
     """
     doc = fitz.open(file_path)
     total_pages = doc.page_count
@@ -19,20 +23,32 @@ def extract_blocks_from_pdf(file_path: str) -> tuple[int, list[dict]]:
         paragraph_id = 0
 
         for block in page_dict.get("blocks", []):
-            # block["type"] == 0 means a text block (1 = image block)
-            if block.get("type") != 0:
+            if block.get("type") != 0:  # 0 = text block, 1 = image block
                 continue
 
             block_text_parts = []
+            weighted_size_sum = 0.0
+            bold_char_count = 0
+            total_char_count = 0
+
             for line in block.get("lines", []):
                 for span in line.get("spans", []):
                     span_text = span.get("text", "")
-                    if span_text.strip():
-                        block_text_parts.append(span_text)
+                    if not span_text.strip():
+                        continue
+                    block_text_parts.append(span_text)
+                    length = len(span_text)
+                    weighted_size_sum += span.get("size", 0.0) * length
+                    total_char_count += length
+                    if span.get("flags", 0) & BOLD_FLAG:
+                        bold_char_count += length
 
             block_text = " ".join(block_text_parts).strip()
             if not block_text:
                 continue
+
+            avg_font_size = round(weighted_size_sum / total_char_count, 2) if total_char_count else None
+            is_bold = (bold_char_count / total_char_count > 0.5) if total_char_count else False
 
             x0, y0, x1, y1 = block["bbox"]
 
@@ -47,6 +63,8 @@ def extract_blocks_from_pdf(file_path: str) -> tuple[int, list[dict]]:
                         "x1": round(x1, 2),
                         "y1": round(y1, 2),
                     },
+                    "avg_font_size": avg_font_size,
+                    "is_bold": is_bold,
                 }
             )
             paragraph_id += 1

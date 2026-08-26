@@ -25,6 +25,8 @@ async def create_indexes():
     await db.documents.create_index("owner_id")
     await db.chunks.create_index("document_id")
     await db.chunks.create_index([("document_id", 1), ("page_number", 1)])
+    await db.topics.create_index("document_id")
+    await db.topics.create_index([("document_id", 1), ("order_index", 1)])
 
 
 @app.get("/api/health")

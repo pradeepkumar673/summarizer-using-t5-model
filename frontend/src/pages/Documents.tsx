@@ -2,6 +2,12 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listDocuments, type DocumentPublic } from "../api/documents";
 
+function statusBadgeClass(status: DocumentPublic["status"]): string {
+  if (status === "ready" || status === "segmented") return "bg-green-100 text-green-700";
+  if (status === "processing") return "bg-yellow-100 text-yellow-700";
+  return "bg-red-100 text-red-700";
+}
+
 export default function Documents() {
   const [documents, setDocuments] = useState<DocumentPublic[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,16 +47,7 @@ export default function Documents() {
                     {doc.total_pages} page{doc.total_pages !== 1 ? "s" : ""}
                   </p>
                 </div>
-                <span
-                  className={
-                    "text-xs font-semibold px-2 py-1 rounded-full " +
-                    (doc.status === "ready"
-                      ? "bg-green-100 text-green-700"
-                      : doc.status === "processing"
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-red-100 text-red-700")
-                  }
-                >
+                <span className={"text-xs font-semibold px-2 py-1 rounded-full " + statusBadgeClass(doc.status)}>
                   {doc.status}
                 </span>
               </Link>
