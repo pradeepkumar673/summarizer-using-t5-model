@@ -12,7 +12,7 @@ GET /api/documents/{id}/export/pdf
 import re
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Query, HTTPException
 from fastapi.responses import Response
 
 from database import db
@@ -21,6 +21,8 @@ from exam_models import ALL_CATEGORIES
 from export_service import build_markdown, build_pdf
 from models import UserPublic
 from routers.documents import _get_owned_document
+from security import decode_access_token
+
 
 router = APIRouter(prefix="/api/documents", tags=["export"])
 
@@ -72,9 +74,24 @@ async def _gather_export_data(document_id: str, user_id: str) -> tuple[dict, lis
 @router.get("/{document_id}/export/markdown")
 async def export_markdown(
     document_id: str,
-    current_user: UserPublic = Depends(get_current_user),
+    request: Request,
+    token: str | None = Query(None),
 ):
-    doc = await _get_owned_document(document_id, current_user.id)
+    auth_header = request.headers.get("Authorization")
+    actual_token = None
+    if auth_header and auth_header.startswith("Bearer "):
+        actual_token = auth_header.split(" ")[1]
+    elif token:
+        actual_token = token
+
+    if not actual_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_id = decode_access_token(actual_token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    doc = await _get_owned_document(document_id, user_id)
     doc_id_str = str(doc["_id"])
 
     topics = await db.topics.find(
@@ -84,7 +101,7 @@ async def export_markdown(
     notebook_notes = await db.notes.find(
         {
             "document_id": doc_id_str,
-            "user_id": current_user.id,
+            "user_id": user_id,
             "$or": [{"is_pinned": True}, {"edited_text": {"$nin": [None, ""]}}],
         }
     ).sort([("source_pages", 1), ("paragraph_id", 1)]).to_list(length=None)
@@ -119,9 +136,24 @@ async def export_markdown(
 @router.get("/{document_id}/export/pdf")
 async def export_pdf(
     document_id: str,
-    current_user: UserPublic = Depends(get_current_user),
+    request: Request,
+    token: str | None = Query(None),
 ):
-    doc = await _get_owned_document(document_id, current_user.id)
+    auth_header = request.headers.get("Authorization")
+    actual_token = None
+    if auth_header and auth_header.startswith("Bearer "):
+        actual_token = auth_header.split(" ")[1]
+    elif token:
+        actual_token = token
+
+    if not actual_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_id = decode_access_token(actual_token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    doc = await _get_owned_document(document_id, user_id)
     doc_id_str = str(doc["_id"])
 
     topics = await db.topics.find(
@@ -131,7 +163,7 @@ async def export_pdf(
     notebook_notes = await db.notes.find(
         {
             "document_id": doc_id_str,
-            "user_id": current_user.id,
+            "user_id": user_id,
             "$or": [{"is_pinned": True}, {"edited_text": {"$nin": [None, ""]}}],
         }
     ).sort([("source_pages", 1), ("paragraph_id", 1)]).to_list(length=None)
@@ -139,6 +171,7 @@ async def export_pdf(
     raw_essentials = await db.exam_essentials.find(
         {"document_id": doc_id_str}
     ).sort([("category", 1), ("source_page", 1)]).to_list(length=None)
+
 
     exam_dict: dict[str, list] = {cat: [] for cat in ALL_CATEGORIES}
     for e in raw_essentials:

@@ -5,13 +5,14 @@ from datetime import datetime, timezone
 from typing import Literal
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Request, Query
 from fastapi.responses import FileResponse
 
 import hierarchy_service
 from config import settings
 from database import db
 from deps import get_current_user
+from security import hash_password, verify_password, create_access_token, decode_access_token
 from embedding_service import encode
 from embedding_service import is_ready as embedder_is_ready
 from models import (
@@ -119,12 +120,31 @@ async def get_document(document_id: str, current_user: UserPublic = Depends(get_
 
 
 @router.get("/{document_id}/file")
-async def get_document_file(document_id: str, current_user: UserPublic = Depends(get_current_user)):
-    doc = await _get_owned_document(document_id, current_user.id)
+async def get_document_file(
+    document_id: str,
+    request: Request,
+    token: str | None = Query(None),
+):
+    auth_header = request.headers.get("Authorization")
+    actual_token = None
+    if auth_header and auth_header.startswith("Bearer "):
+        actual_token = auth_header.split(" ")[1]
+    elif token:
+        actual_token = token
+
+    if not actual_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    user_id = decode_access_token(actual_token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    doc = await _get_owned_document(document_id, user_id)
     file_path = doc["file_path"]
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found on server")
     return FileResponse(file_path, media_type="application/pdf", filename=doc["title"])
+
 
 
 @router.post("/{document_id}/process", response_model=list[TopicPublic])

@@ -133,7 +133,8 @@ export async function getDocument(id: string): Promise<DocumentDetail> {
 }
 
 export function getDocumentFileUrl(id: string): string {
-  return `http://localhost:8000/api/documents/${id}/file`;
+  const token = localStorage.getItem("access_token");
+  return `http://localhost:8000/api/documents/${id}/file${token ? `?token=${token}` : ""}`;
 }
 
 export async function processDocument(id: string): Promise<TopicPublic[]> {
@@ -217,12 +218,14 @@ export async function getExamEssentials(
 
 /** Returns the direct download URL for the Markdown export. */
 export function getExportMarkdownUrl(id: string): string {
-  return `http://localhost:8000/api/documents/${id}/export/markdown`;
+  const token = localStorage.getItem("access_token");
+  return `http://localhost:8000/api/documents/${id}/export/markdown${token ? `?token=${token}` : ""}`;
 }
 
 /** Returns the direct download URL for the PDF export. */
 export function getExportPdfUrl(id: string): string {
-  return `http://localhost:8000/api/documents/${id}/export/pdf`;
+  const token = localStorage.getItem("access_token");
+  return `http://localhost:8000/api/documents/${id}/export/pdf${token ? `?token=${token}` : ""}`;
 }
 
 export async function getDocumentStatus(id: string): Promise<{ status: string }> {
