@@ -40,7 +40,19 @@ def user_doc_to_public(doc: dict) -> UserPublic:
 
 # --- Document / chunk models ---
 
-DocumentStatus = Literal["processing", "ready", "segmented", "failed"]
+DocumentStatus = Literal[
+    "queued",
+    "extracting",
+    "segmenting",
+    "summarizing",
+    "hierarchy",
+    "embedding",
+    "exam_essentials",
+    "graph",
+    "ready",
+    "failed",
+    "processing",
+]
 
 
 class BoundingBox(BaseModel):

@@ -32,6 +32,7 @@ from summarization_service import is_ready as summarizer_is_ready
 from summarization_service import summarize_text
 from topic_segmentation import segment_topics
 from vector_store import index_chunks
+from tasks import process_document_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -63,42 +64,26 @@ async def upload_document(
         "owner_id": current_user.id,
         "upload_date": datetime.now(timezone.utc),
         "total_pages": 0,
-        "status": "processing",
+        "status": "queued",
         "file_path": file_path,
     }
     result = await db.documents.insert_one(document_doc)
-    document_id = result.inserted_id
+    document_id = str(result.inserted_id)
 
-    try:
-        total_pages, chunks = extract_blocks_from_pdf(file_path)
-    except Exception as exc:
-        await db.documents.update_one(
-            {"_id": document_id}, {"$set": {"status": "failed"}}
-        )
-        raise HTTPException(status_code=422, detail=f"Failed to process PDF: {exc}")
+    # Queue Celery processing pipeline
+    process_document_pipeline.delay(document_id)
 
-    if chunks:
-        chunk_docs = [
-            {
-                "document_id": str(document_id),
-                "page_number": c["page_number"],
-                "paragraph_id": c["paragraph_id"],
-                "text": c["text"],
-                "bounding_box": c["bounding_box"],
-                "avg_font_size": c.get("avg_font_size"),
-                "is_bold": c.get("is_bold", False),
-            }
-            for c in chunks
-        ]
-        await db.chunks.insert_many(chunk_docs)
-
-    await db.documents.update_one(
-        {"_id": document_id},
-        {"$set": {"total_pages": total_pages, "status": "ready"}},
-    )
-
-    updated_doc = await db.documents.find_one({"_id": document_id})
+    updated_doc = await db.documents.find_one({"_id": result.inserted_id})
     return document_doc_to_public(updated_doc)
+
+
+@router.get("/{document_id}/status")
+async def get_document_status(
+    document_id: str,
+    current_user: UserPublic = Depends(get_current_user),
+):
+    doc = await _get_owned_document(document_id, current_user.id)
+    return {"status": doc["status"]}
 
 
 @router.get("", response_model=list[DocumentPublic])

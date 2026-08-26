@@ -224,3 +224,9 @@ export function getExportMarkdownUrl(id: string): string {
 export function getExportPdfUrl(id: string): string {
   return `http://localhost:8000/api/documents/${id}/export/pdf`;
 }
+
+export async function getDocumentStatus(id: string): Promise<{ status: string }> {
+  const res = await api.get<{ status: string }>(`/api/documents/${id}/status`);
+  return res.data;
+}
+

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
@@ -10,6 +10,7 @@ import {
   summarizeDocument,
   summarizeHierarchy,
   getNotes,
+  getDocumentStatus,
   type DocumentDetail,
   type TopicPublic,
   type NotePublic,
@@ -43,52 +44,77 @@ export default function DocumentViewer() {
   const [notesError, setNotesError] = useState<string | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
 
   const setActiveDocument = useWorkspaceStore((s) => s.setActiveDocument);
   const requestedNoteLevel = useWorkspaceStore((s) => s.requestedNoteLevel);
 
+  const loadDocument = useCallback(async () => {
+    if (!id) return;
+    setError(null);
+    try {
+      const docDetail = await getDocument(id);
+      setDoc(docDetail);
+      try {
+        const topicsList = await getTopics(id);
+        setTopics(topicsList);
+      } catch {
+        // no topics yet -- fine
+      }
+      try {
+        const notesList = await getNotes(id, noteLevel);
+        setNotes(notesList);
+        if (noteLevel === "paragraph") setParagraphNotes(notesList);
+      } catch {
+        // no notes yet -- fine
+      }
+    } catch (err) {
+      setError(
+        axios.isAxiosError(err) ? err.response?.data?.detail ?? "Failed to load document." : "Failed to load document."
+      );
+    }
+  }, [id, noteLevel]);
+
   useEffect(() => {
     if (!id) return;
     setActiveDocument(id);
+    setLoading(true);
+    loadDocument().finally(() => setLoading(false));
+  }, [id, setActiveDocument, loadDocument]);
+
+  useEffect(() => {
+    if (!id) return;
+    let interval: any = null;
     let cancelled = false;
-    async function load() {
-      setLoading(true);
-      setError(null);
+
+    const poll = async () => {
       try {
-        const docDetail = await getDocument(id!);
+        const { status: currentStatus } = await getDocumentStatus(id!);
         if (cancelled) return;
-        setDoc(docDetail);
-        try {
-          const topicsList = await getTopics(id!);
-          if (!cancelled) setTopics(topicsList);
-        } catch {
-          // no topics yet -- fine
-        }
-        try {
-          const notesList = await getNotes(id!, noteLevel);
-          if (!cancelled) {
-            setNotes(notesList);
-            if (noteLevel === "paragraph") setParagraphNotes(notesList);
+        setStatus(currentStatus);
+        if (currentStatus === "ready" || currentStatus === "failed") {
+          if (interval) clearInterval(interval);
+          if (currentStatus === "ready") {
+            loadDocument();
           }
-        } catch {
-          // no notes yet -- fine
         }
       } catch (err) {
-        if (!cancelled) {
-          setError(
-            axios.isAxiosError(err) ? err.response?.data?.detail ?? "Failed to load document." : "Failed to load document."
-          );
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+        // ignore
       }
+    };
+
+    if (doc && doc.status !== "ready" && doc.status !== "failed") {
+      poll();
+      interval = setInterval(poll, 2000);
+    } else {
+      if (doc) setStatus(doc.status);
     }
-    load();
+
     return () => {
       cancelled = true;
+      if (interval) clearInterval(interval);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, doc, loadDocument]);
 
   useEffect(() => {
     if (!id || loading) return;
@@ -190,6 +216,37 @@ export default function DocumentViewer() {
     );
   }
 
+  const statusDisplay = () => {
+    if (!status) return null;
+    if (status === "ready") return null;
+    if (status === "failed") {
+      return (
+        <div className="border-b bg-red-50 px-6 py-3 text-sm text-red-800 font-medium">
+          Processing failed. Please try again.
+        </div>
+      );
+    }
+    const stageMap: Record<string, string> = {
+      queued: "Queued...",
+      extracting: "Extracting text from PDF...",
+      segmenting: "Segmenting topics...",
+      summarizing: "Generating summaries...",
+      hierarchy: "Building hierarchy...",
+      embedding: "Creating semantic index...",
+      exam_essentials: "Extracting exam essentials...",
+      graph: "Building knowledge graph...",
+    };
+    const label = stageMap[status] || status;
+    return (
+      <div className="border-b bg-blue-50 px-6 py-3 text-sm text-blue-800 flex items-center gap-4 font-medium">
+        <span>{label}</span>
+        <div className="flex-1 max-w-xs h-2.5 bg-blue-200 rounded-full overflow-hidden">
+          <div className="h-full bg-blue-600 rounded-full animate-pulse" style={{ width: "100%" }} />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
     <div className="flex h-screen flex-col bg-slate-50">
@@ -200,44 +257,54 @@ export default function DocumentViewer() {
           </Link>
           <h1 className="mt-1 text-xl font-semibold text-slate-900">{doc.title}</h1>
           <p className="text-sm text-slate-500">
-            {doc.total_pages} pages &bull; status: {doc.status}
+            {doc.total_pages} pages &bull; status: {status ?? doc.status}
           </p>
         </div>
         <SearchBar documentId={doc.id} />
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            to={`/documents/${doc.id}/notebook`}
-            className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100"
+            to={status === "ready" ? `/documents/${doc.id}/notebook` : "#"}
+            className={`rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100 ${
+              status !== "ready" ? "pointer-events-none opacity-50" : ""
+            }`}
           >
             My Notebook
           </Link>
           <Link
-            to={`/documents/${doc.id}/exam-essentials`}
-            className="rounded-md border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+            to={status === "ready" ? `/documents/${doc.id}/exam-essentials` : "#"}
+            className={`rounded-md border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 ${
+              status !== "ready" ? "pointer-events-none opacity-50" : ""
+            }`}
           >
             Exam Essentials
           </Link>
           <Link
-            to={`/documents/${doc.id}/graph`}
-            className="rounded-md border border-teal-300 bg-teal-50 px-4 py-2 text-sm font-medium text-teal-700 hover:bg-teal-100"
+            to={status === "ready" ? `/documents/${doc.id}/graph` : "#"}
+            className={`rounded-md border border-teal-300 bg-teal-50 px-4 py-2 text-sm font-medium text-teal-700 hover:bg-teal-100 ${
+              status !== "ready" ? "pointer-events-none opacity-50" : ""
+            }`}
           >
             🕸️ Knowledge Graph
           </Link>
           <Link
-            to={`/documents/${doc.id}/viva`}
-            className="rounded-md border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
+            to={status === "ready" ? `/documents/${doc.id}/viva` : "#"}
+            className={`rounded-md border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 ${
+              status !== "ready" ? "pointer-events-none opacity-50" : ""
+            }`}
           >
             🎓 Viva Simulator
           </Link>
           <button
             onClick={() => setAssistantOpen(true)}
-            className="rounded-md border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
+            disabled={status !== "ready"}
+            className="rounded-md border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             🤖 Ask AI
           </button>
           <button
             onClick={() => setShowHeatmap((v) => !v)}
-            className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
+            disabled={status !== "ready"}
+            className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               showHeatmap
                 ? "border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
                 : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
@@ -247,21 +314,21 @@ export default function DocumentViewer() {
           </button>
           <button
             onClick={handleProcess}
-            disabled={processing}
+            disabled={processing || status !== "ready"}
             className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {processing ? "Segmenting topics..." : "Segment Topics"}
           </button>
           <button
             onClick={handleSummarize}
-            disabled={summarizing}
+            disabled={summarizing || status !== "ready"}
             className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {summarizing ? "Generating notes..." : "Generate Notes"}
           </button>
           <button
             onClick={handleBuildHierarchy}
-            disabled={buildingHierarchy}
+            disabled={buildingHierarchy || status !== "ready"}
             title="Rolls up existing paragraph notes into Topic, Page, and Chapter summaries"
             className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -269,6 +336,8 @@ export default function DocumentViewer() {
           </button>
         </div>
       </header>
+
+      {statusDisplay()}
 
       {summarizing && (
         <div className="border-b bg-indigo-50 px-6 py-3 text-sm text-indigo-800">
