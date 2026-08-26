@@ -2,6 +2,10 @@
 import redis.connection
 redis.connection.DEFAULT_RESP_VERSION = 2
 
+# Disable maintenance notifications globally since they require RESP3 and hiredis
+original_maint_init = redis.connection.MaintNotificationsConfig.__init__
+redis.connection.MaintNotificationsConfig.__init__ = lambda self, *args, **kwargs: original_maint_init(self, enabled=False)
+
 from celery import Celery
 from config import settings
 
