@@ -15,6 +15,8 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
+    broker_transport_options={"protocol": 2},
+    result_backend_transport_options={"protocol": 2},
 )
 
 # Force load T5 and sentence-transformer models when worker starts
