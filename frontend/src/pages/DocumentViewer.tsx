@@ -3,144 +3,244 @@ import { useParams, Link } from "react-router-dom";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import axios from "axios";
 import {
   getDocument,
   getDocumentFileUrl,
   processDocument,
   getTopics,
+  summarizeDocument,
+  getNotes,
   type DocumentDetail,
   type TopicPublic,
+  type NotePublic,
 } from "../api/documents";
-import axios from "axios";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 export default function DocumentViewer() {
   const { id } = useParams<{ id: string }>();
-  const [detail, setDetail] = useState<DocumentDetail | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [numPages, setNumPages] = useState<number>(0);
 
+  const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [topics, setTopics] = useState<TopicPublic[]>([]);
+  const [notes, setNotes] = useState<NotePublic[]>([]);
+  const [numPages, setNumPages] = useState(0);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [processError, setProcessError] = useState<string | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
-    getDocument(id)
-      .then(setDetail)
-      .catch(() => setError("Failed to load document."));
+    let cancelled = false;
 
-    getTopics(id)
-      .then(setTopics)
-      .catch(() => {
-        // No topics yet is expected for unprocessed documents - not an error
-      });
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const docDetail = await getDocument(id!);
+        if (cancelled) return;
+        setDoc(docDetail);
+
+        try {
+          const topicsList = await getTopics(id!);
+          if (!cancelled) setTopics(topicsList);
+        } catch {
+          // No topics yet is expected for unprocessed documents - not an error
+        }
+
+        try {
+          const notesList = await getNotes(id!);
+          if (!cancelled) setNotes(notesList);
+        } catch {
+          // No notes yet is expected before summarization has been run - not an error
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            axios.isAxiosError(err)
+              ? err.response?.data?.detail ?? "Failed to load document."
+              : "Failed to load document."
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function handleProcess() {
     if (!id) return;
     setProcessing(true);
-    setProcessError(null);
+    setError(null);
     try {
-      const result = await processDocument(id);
-      setTopics(result);
-      setDetail((prev) => (prev ? { ...prev, status: "segmented" } : prev));
+      const topicsList = await processDocument(id);
+      setTopics(topicsList);
+      setDoc((prev) => (prev ? { ...prev, status: "segmented" } : prev));
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.data?.detail) {
-        setProcessError(err.response.data.detail);
-      } else {
-        setProcessError("Failed to process document.");
-      }
+      setError(
+        axios.isAxiosError(err)
+          ? err.response?.data?.detail ?? "Failed to process document."
+          : "Failed to process document."
+      );
     } finally {
       setProcessing(false);
     }
   }
 
-  if (!id) return null;
+  async function handleSummarize() {
+    if (!id) return;
+    setSummarizing(true);
+    setNotesError(null);
+    try {
+      const generated = await summarizeDocument(id);
+      setNotes(generated);
+    } catch (err) {
+      setNotesError(
+        axios.isAxiosError(err)
+          ? err.response?.data?.detail ?? "Failed to generate notes."
+          : "Failed to generate notes."
+      );
+    } finally {
+      setSummarizing(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-slate-500">
+        Loading document...
+      </div>
+    );
+  }
+
+  if (error || !doc) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+        <p className="text-red-600">{error ?? "Document not found."}</p>
+        <Link to="/documents" className="text-blue-600 hover:underline">
+          Back to documents
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-100 py-8 px-4">
-      <div className="max-w-5xl mx-auto space-y-4">
-        <div className="flex justify-between items-center">
-          <Link to="/documents" className="text-blue-600 font-medium text-sm">
-            &larr; Back to Documents
+    <div className="min-h-screen bg-slate-50">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b bg-white px-6 py-4">
+        <div>
+          <Link to="/documents" className="text-sm text-blue-600 hover:underline">
+            &larr; All documents
           </Link>
-          {detail && <h1 className="text-xl font-bold">{detail.title}</h1>}
+          <h1 className="mt-1 text-xl font-semibold text-slate-900">{doc.title}</h1>
+          <p className="text-sm text-slate-500">
+            {doc.total_pages} pages &bull; status: {doc.status}
+          </p>
         </div>
-
-        {error && <p className="text-red-600">{error}</p>}
-
-        <div className="bg-white shadow-md rounded-xl p-4 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-slate-600">
-              Status: <span className="font-semibold">{detail?.status ?? "loading..."}</span>
-            </p>
-            {processError && <p className="text-red-600 text-sm mt-1">{processError}</p>}
-          </div>
+        <div className="flex items-center gap-3">
           <button
             onClick={handleProcess}
-            disabled={processing || !detail || detail.status === "processing"}
-            className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            disabled={processing}
+            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {processing ? "Processing..." : "Process Document"}
+            {processing ? "Segmenting topics..." : "Segment Topics"}
+          </button>
+          <button
+            onClick={handleSummarize}
+            disabled={summarizing}
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {summarizing ? "Generating notes..." : "Generate Notes"}
           </button>
         </div>
+      </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white shadow-md rounded-xl p-4 flex flex-col items-center overflow-auto max-h-[85vh]">
-            <Document
-              file={getDocumentFileUrl(id)}
-              onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-              onLoadError={() => setError("Failed to render PDF.")}
-              loading={<p className="text-slate-500">Loading PDF...</p>}
-            >
-              {Array.from({ length: numPages }, (_, i) => (
-                <Page
-                  key={`page_${i + 1}`}
-                  pageNumber={i + 1}
-                  className="mb-4 border border-slate-200"
-                  width={500}
-                />
-              ))}
-            </Document>
-          </div>
-
-          <div className="space-y-6">
-            {topics.length > 0 && (
-              <div className="bg-white shadow-md rounded-xl p-4 overflow-auto max-h-[38vh] space-y-3">
-                <h2 className="font-semibold text-slate-700">Detected Topics ({topics.length})</h2>
-                {topics.map((topic) => (
-                  <div key={topic.id} className="border-b border-slate-100 pb-2">
-                    <p className="font-medium text-slate-800">{topic.title}</p>
-                    <p className="text-xs text-slate-400">
-                      Pages {topic.page_range[0]}&ndash;{topic.page_range[1]} &bull; {topic.paragraph_ids.length} block
-                      {topic.paragraph_ids.length !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="bg-white shadow-md rounded-xl p-4 overflow-auto max-h-[45vh] space-y-3">
-              <h2 className="font-semibold text-slate-700">
-                Extracted Text Blocks ({detail?.chunks.length ?? 0})
-              </h2>
-              {!detail && !error && <p className="text-slate-500 text-sm">Loading...</p>}
-              {detail?.chunks.map((chunk) => (
-                <div key={chunk.id} className="border-b border-slate-100 pb-2">
-                  <p className="text-xs text-slate-400 mb-1">
-                    Page {chunk.page_number} &bull; Block {chunk.paragraph_id} &bull; bbox(
-                    {chunk.bounding_box.x0}, {chunk.bounding_box.y0}, {chunk.bounding_box.x1},{" "}
-                    {chunk.bounding_box.y1})
-                    {chunk.avg_font_size && ` &bull; font ${chunk.avg_font_size}pt${chunk.is_bold ? " bold" : ""}`}
-                  </p>
-                  <p className="text-sm text-slate-700">{chunk.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+      {summarizing && (
+        <div className="border-b bg-indigo-50 px-6 py-3 text-sm text-indigo-800">
+          Running real T5 inference on every paragraph in this document. On CPU this can
+          legitimately take a minute or more for longer documents &ndash; this panel will update
+          automatically once it's done.
         </div>
+      )}
+
+      {notesError && (
+        <div className="border-b bg-red-50 px-6 py-3 text-sm text-red-700">{notesError}</div>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 p-6 lg:grid-cols-[220px_1fr_360px]">
+        <aside className="space-y-2">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Topics
+          </h2>
+          {topics.length === 0 ? (
+            <p className="text-sm text-slate-400">No topics yet. Click "Segment Topics" above.</p>
+          ) : (
+            <ul className="space-y-1">
+              {topics.map((t) => (
+                <li
+                  key={t.id}
+                  className="rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-slate-100"
+                >
+                  <span className="font-medium">{t.title}</span>
+                  <span className="ml-1 text-xs text-slate-400">
+                    (p. {t.page_range[0]}&ndash;{t.page_range[1]})
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </aside>
+
+        <main className="flex flex-col items-center gap-4">
+          <Document
+            file={getDocumentFileUrl(doc.id)}
+            onLoadSuccess={({ numPages: n }) => setNumPages(n)}
+            onLoadError={(err) => setError(`Failed to render PDF: ${err.message}`)}
+            loading={<p className="text-sm text-slate-500">Loading PDF...</p>}
+          >
+            {Array.from({ length: numPages }, (_, i) => (
+              <Page
+                key={i}
+                pageNumber={i + 1}
+                className="mb-4 shadow border border-slate-200"
+                width={500}
+              />
+            ))}
+          </Document>
+        </main>
+
+        <aside className="space-y-3">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Notes {notes.length > 0 && `(${notes.length})`}
+          </h2>
+          {notes.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              No notes yet. Click "Generate Notes" above to run T5 summarization over every
+              paragraph in this document.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {notes.map((n) => (
+                <li
+                  key={n.id}
+                  className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
+                >
+                  <p className="text-sm text-slate-800">{n.text}</p>
+                  <p className="mt-2 text-xs text-slate-400">
+                    Page {n.source_page} &bull; paragraph #{n.paragraph_id}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </aside>
       </div>
     </div>
   );

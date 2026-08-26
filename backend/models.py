@@ -121,3 +121,34 @@ def topic_doc_to_public(doc: dict) -> TopicPublic:
         paragraph_ids=doc["paragraph_ids"],
         page_range=doc["page_range"],
     )
+
+
+# --- Note models (STEP 5: T5 paragraph-level summarization) ---
+
+NoteLevel = Literal["paragraph"]
+
+
+class NotePublic(BaseModel):
+    id: str
+    document_id: str
+    topic_id: str | None = None
+    paragraph_id: int
+    level: NoteLevel
+    text: str
+    source_page: int
+    source_bounding_box: BoundingBox
+    created_at: datetime
+
+
+def note_doc_to_public(doc: dict) -> NotePublic:
+    return NotePublic(
+        id=str(doc["_id"]),
+        document_id=doc["document_id"],
+        topic_id=doc.get("topic_id"),
+        paragraph_id=doc["paragraph_id"],
+        level=doc["level"],
+        text=doc["text"],
+        source_page=doc["source_page"],
+        source_bounding_box=BoundingBox(**doc["source_bounding_box"]),
+        created_at=doc["created_at"],
+    )

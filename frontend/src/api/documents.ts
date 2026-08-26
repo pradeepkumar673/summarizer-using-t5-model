@@ -42,6 +42,20 @@ export type TopicPublic = {
   page_range: [number, number];
 };
 
+export type NoteLevel = "paragraph";
+
+export type NotePublic = {
+  id: string;
+  document_id: string;
+  topic_id: string | null;
+  paragraph_id: number;
+  level: NoteLevel;
+  text: string;
+  source_page: number;
+  source_bounding_box: BoundingBox;
+  created_at: string;
+};
+
 export async function uploadDocument(
   file: File,
   onProgress: (percent: number) => void
@@ -81,5 +95,20 @@ export async function processDocument(id: string): Promise<TopicPublic[]> {
 
 export async function getTopics(id: string): Promise<TopicPublic[]> {
   const res = await api.get<TopicPublic[]>(`/api/documents/${id}/topics`);
+  return res.data;
+}
+
+export async function summarizeDocument(id: string): Promise<NotePublic[]> {
+  const res = await api.post<NotePublic[]>(`/api/documents/${id}/summarize`);
+  return res.data;
+}
+
+export async function getNotes(
+  id: string,
+  level: NoteLevel = "paragraph"
+): Promise<NotePublic[]> {
+  const res = await api.get<NotePublic[]>(`/api/documents/${id}/notes`, {
+    params: { level },
+  });
   return res.data;
 }

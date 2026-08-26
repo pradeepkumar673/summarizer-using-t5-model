@@ -14,13 +14,16 @@ from models import (
     DocumentPublic,
     DocumentDetail,
     TopicPublic,
+    NotePublic,
     document_doc_to_public,
     chunk_doc_to_public,
     topic_doc_to_public,
+    note_doc_to_public,
 )
 from pdf_extraction import extract_blocks_from_pdf
 from preprocessing import clean_chunks, split_into_sentences
 from topic_segmentation import segment_topics
+from summarization_service import is_ready as summarizer_is_ready, summarize_text
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -202,3 +205,84 @@ async def get_topics(document_id: str, current_user: UserPublic = Depends(get_cu
     cursor = db.topics.find({"document_id": str(doc["_id"])}).sort("order_index", 1)
     topics = await cursor.to_list(length=None)
     return [topic_doc_to_public(t) for t in topics]
+
+
+# --- STEP 5: paragraph-level T5 summarization ---
+
+MIN_WORDS_FOR_SUMMARY = 8  # skip lone headings / page-artifact blocks - nothing to summarize
+
+
+@router.post("/{document_id}/summarize", response_model=list[NotePublic])
+async def summarize_document(document_id: str, current_user: UserPublic = Depends(get_current_user)):
+    if not summarizer_is_ready():
+        raise HTTPException(
+            status_code=503,
+            detail="Summarization model is still loading. Try again in a moment.",
+        )
+
+    doc = await _get_owned_document(document_id, current_user.id)
+
+    chunk_cursor = db.chunks.find({"document_id": str(doc["_id"])}).sort(
+        [("page_number", 1), ("paragraph_id", 1)]
+    )
+    raw_chunks = await chunk_cursor.to_list(length=None)
+    if not raw_chunks:
+        raise HTTPException(status_code=400, detail="Document has no extracted content to summarize.")
+
+    # Build a chunk-_id -> topic-_id lookup so each Note can be linked back to its topic
+    topic_cursor = db.topics.find({"document_id": str(doc["_id"])})
+    topics = await topic_cursor.to_list(length=None)
+    paragraph_to_topic: dict[str, str] = {}
+    for t in topics:
+        for pid in t["paragraph_ids"]:
+            paragraph_to_topic[pid] = str(t["_id"])
+
+    # Idempotent re-summarization: wipe previous paragraph-level notes for this doc first
+    await db.notes.delete_many({"document_id": str(doc["_id"]), "level": "paragraph"})
+
+    note_docs = []
+    for chunk in raw_chunks:
+        text = (chunk.get("text") or "").strip()
+        if len(text.split()) < MIN_WORDS_FOR_SUMMARY:
+            continue
+
+        summary = summarize_text(text, max_length=60, min_length=10)
+        if not summary:
+            continue
+
+        chunk_id_str = str(chunk["_id"])
+        note_docs.append(
+            {
+                "document_id": str(doc["_id"]),
+                "topic_id": paragraph_to_topic.get(chunk_id_str),
+                "paragraph_id": chunk["paragraph_id"],
+                "level": "paragraph",
+                "text": summary,
+                "source_page": chunk["page_number"],
+                "source_bounding_box": chunk["bounding_box"],
+                "created_at": datetime.now(timezone.utc),
+            }
+        )
+
+    inserted_notes = []
+    if note_docs:
+        result = await db.notes.insert_many(note_docs)
+        inserted_notes = await db.notes.find(
+            {"_id": {"$in": list(result.inserted_ids)}}
+        ).sort([("source_page", 1), ("paragraph_id", 1)]).to_list(length=None)
+
+    return [note_doc_to_public(n) for n in inserted_notes]
+
+
+@router.get("/{document_id}/notes", response_model=list[NotePublic])
+async def get_notes(
+    document_id: str,
+    level: str = "paragraph",
+    current_user: UserPublic = Depends(get_current_user),
+):
+    doc = await _get_owned_document(document_id, current_user.id)
+    cursor = db.notes.find({"document_id": str(doc["_id"]), "level": level}).sort(
+        [("source_page", 1), ("paragraph_id", 1)]
+    )
+    notes = await cursor.to_list(length=None)
+    return [note_doc_to_public(n) for n in notes]
