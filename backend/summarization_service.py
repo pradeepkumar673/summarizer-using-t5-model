@@ -1,8 +1,10 @@
+# backend/summarization_service.py
 """
 Loads a pretrained T5 model ONCE (call load_model() at app startup) and
 exposes:
   - summarize_text(): single-pass T5 generation for text that already fits
     the model's input window.
+  - summarize_text_batch(): batch T5 generation for multiple texts in a single pass.
   - summarize_long_text(): map-reduce summarization for arbitrarily long
     text (topic/page/chapter roll-ups) that respects T5's max input token
     length by chunking + batch-summarizing + recursively re-summarizing,
@@ -11,6 +13,7 @@ exposes:
 
 import logging
 import re
+from typing import Any
 
 import torch
 from transformers import T5ForConditionalGeneration, T5Tokenizer
@@ -46,14 +49,14 @@ def is_ready() -> bool:
 
 
 def _token_count(text: str) -> int:
+    if not is_ready():
+        return 0
     return len(_tokenizer(text, truncation=False)["input_ids"])
 
 
 def summarize_text(text: str, max_length: int = 60, min_length: int = 10) -> str:
     """
-    Runs real T5 generation on `text`. Prefixes with "summarize: " as T5 requires.
-    Truncates the input to MAX_INPUT_TOKENS tokens as a safety net (should only
-    ever bite here since summarize_long_text pre-chunks anything bigger).
+    Runs T5 generation on a single text string.
     """
     if not is_ready():
         raise RuntimeError("Summarization model is not loaded yet. Call load_model() first.")
@@ -75,21 +78,54 @@ def summarize_text(text: str, max_length: int = 60, min_length: int = 10) -> str
             **inputs,
             max_length=max_length,
             min_length=min_length,
-            num_beams=4,
-            length_penalty=2.0,
-            no_repeat_ngram_size=3,
+            num_beams=2,
             early_stopping=True,
         )
 
     return _tokenizer.decode(output_ids[0], skip_special_tokens=True).strip()
 
 
+def summarize_text_batch(texts: list[str], max_length: int = 60, min_length: int = 10) -> list[str]:
+    """
+    Runs T5 generation on a list of texts in a single batch pass.
+    """
+    if not is_ready():
+        raise RuntimeError("Summarization model is not loaded yet. Call load_model() first.")
+    if not texts:
+        return []
+
+    # Clean and prefix texts
+    prefixed = ["summarize: " + t.strip() for t in texts]
+    
+    # Tokenize batch with padding
+    inputs = _tokenizer(
+        prefixed,
+        max_length=MAX_INPUT_TOKENS,
+        truncation=True,
+        padding=True,
+        return_tensors="pt"
+    ).to(_device)
+
+    with torch.no_grad():
+        output_ids = _model.generate(
+            input_ids=inputs.input_ids,
+            attention_mask=inputs.attention_mask,
+            max_length=max_length,
+            min_length=min_length,
+            num_beams=2,
+            early_stopping=True,
+        )
+
+    # Decode all outputs
+    results = []
+    for out_id in output_ids:
+        results.append(_tokenizer.decode(out_id, skip_special_tokens=True).strip())
+    return results
+
+
 def _split_into_token_chunks(text: str, max_tokens: int) -> list[str]:
     """
-    Splits `text` into chunks of at most `max_tokens` T5 tokens each, breaking on
-    sentence boundaries where possible so we don't cut a thought in half. Falls
-    back to a hard word-level split for any single sentence that alone exceeds
-    max_tokens (rare, but real long run-on sentences happen).
+    Splits `text` into chunks of at most `max_tokens` T5 tokens each.
     """
     sentences = re.split(r"(?<=[.!?])\s+", text.strip())
     chunks: list[str] = []
@@ -109,7 +145,6 @@ def _split_into_token_chunks(text: str, max_tokens: int) -> list[str]:
         sentence_tokens = _token_count(sentence)
 
         if sentence_tokens > max_tokens:
-            # A single sentence is itself too long -- hard-split on words.
             flush()
             words = sentence.split()
             sub: list[str] = []
@@ -136,16 +171,7 @@ def _split_into_token_chunks(text: str, max_tokens: int) -> list[str]:
 
 def summarize_long_text(text: str, max_length: int = 100, min_length: int = 20, _depth: int = 0) -> str:
     """
-    Summarizes arbitrarily long text with T5 while respecting the model's max
-    input token length. If the text already fits in one pass, summarizes it
-    directly. If it doesn't, this performs REAL chunk-and-batch summarization:
-    splits the text into token-bounded chunks (see _split_into_token_chunks),
-    summarizes each chunk individually, concatenates those intermediate
-    summaries, and recursively re-summarizes the result until it fits in a
-    single final pass. Nothing is silently dropped -- every chunk gets
-    summarized and folded into the next pass. A warning is logged every time
-    batching kicks in, and again if we ever hit the recursion safety ceiling
-    (at which point summarize_text's own truncation is the last resort).
+    Summarizes arbitrarily long text with T5 by chunking and batch-summarizing.
     """
     if not is_ready():
         raise RuntimeError("Summarization model is not loaded yet.")
@@ -167,21 +193,25 @@ def summarize_long_text(text: str, max_length: int = 100, min_length: int = 20, 
         )
         return summarize_text(text, max_length=max_length, min_length=min_length)
 
-    chunk_token_budget = SAFE_INPUT_TOKENS - 15  # extra headroom for "summarize: " on each chunk
+    chunk_token_budget = SAFE_INPUT_TOKENS - 15
     chunks = _split_into_token_chunks(text, chunk_token_budget)
 
-    logger.warning(
+    logger.info(
         "summarize_long_text: input is %d tokens (limit %d) at depth %d -- "
-        "splitting into %d chunk(s) and summarizing in batches before the "
-        "final roll-up pass so no content is silently truncated.",
+        "splitting into %d chunk(s) and summarizing in batch.",
         token_count, SAFE_INPUT_TOKENS, _depth, len(chunks),
     )
 
-    chunk_summaries = [
-        summarize_text(chunk, max_length=max_length, min_length=min(min_length, 15))
-        for chunk in chunks
-        if chunk.strip()
-    ]
+    valid_chunks = [c for c in chunks if c.strip()]
+    if not valid_chunks:
+        return ""
+
+    # Call the batch summarizer to run all chunks in parallel
+    chunk_summaries = summarize_text_batch(
+        valid_chunks, 
+        max_length=max_length, 
+        min_length=min(min_length, 15)
+    )
     combined = " ".join(chunk_summaries)
 
     return summarize_long_text(combined, max_length=max_length, min_length=min_length, _depth=_depth + 1)

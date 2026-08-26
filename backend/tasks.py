@@ -8,7 +8,7 @@ from celery_app import celery_app
 from pdf_extraction import extract_blocks_from_pdf
 from preprocessing import clean_chunks, split_into_sentences
 from topic_segmentation import segment_topics
-from summarization_service import summarize_text, is_ready as summarizer_ready
+from summarization_service import summarize_text, summarize_text_batch, is_ready as summarizer_ready
 from embedding_service import encode, is_ready as embedder_ready
 from vector_store import index_chunks
 from key_info_extractor import extract_from_chunks
@@ -98,12 +98,26 @@ async def _run_pipeline(document_id: str, self):
 
         await local_db.notes.delete_many({"document_id": doc_id_str, "level": {"$in": ["paragraph", "topic", "page", "chapter"]}})
 
-        note_docs = []
+        # Collect valid chunks and texts to summarize
+        valid_chunks = []
+        texts_to_summarize = []
         for chunk in chunks_for_summary:
             text = chunk.get("text", "").strip()
             if len(text.split()) < 8:
                 continue
-            summary = summarize_text(text, max_length=60, min_length=10)
+            valid_chunks.append(chunk)
+            texts_to_summarize.append(text)
+
+        # Batch process the texts (batch size of 16)
+        summaries = []
+        batch_size = 16
+        for i in range(0, len(texts_to_summarize), batch_size):
+            batch = texts_to_summarize[i : i + batch_size]
+            batch_summaries = summarize_text_batch(batch, max_length=60, min_length=10)
+            summaries.extend(batch_summaries)
+
+        note_docs = []
+        for chunk, summary in zip(valid_chunks, summaries):
             if not summary:
                 continue
             chunk_id_str = str(chunk["_id"])
