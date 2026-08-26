@@ -5,12 +5,28 @@ import {
   getDocument,
   getExamEssentials,
   generateExamEssentials,
+  getExportMarkdownUrl,
+  getExportPdfUrl,
   type DocumentDetail,
   type ExamCategory,
   type ExamEssential,
   type ExamEssentialsResult,
 } from "../api/documents";
 import { useWorkspaceStore } from "../store/workspaceStore";
+import apiClient from "../api/client";
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }, 200);
+}
 
 const CATEGORY_META: {
   key: ExamCategory;
@@ -74,7 +90,32 @@ export default function ExamEssentials() {
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<ExamCategory>("definition");
 
+  const [exporting, setExporting] = useState<"md" | "pdf" | null>(null);
+
   const focusSearchResult = useWorkspaceStore((s) => s.focusSearchResult);
+
+  async function handleExport(format: "md" | "pdf") {
+    if (!id) return;
+    setExporting(format);
+    setError(null);
+    try {
+      const url = format === "md" ? getExportMarkdownUrl(id) : getExportPdfUrl(id);
+      const res = await apiClient.get(url, { responseType: "blob" });
+      const mimeType = format === "md" ? "text/markdown" : "application/pdf";
+      const extension = format === "md" ? ".md" : ".pdf";
+      const blob = new Blob([res.data], { type: mimeType });
+      const filename = (doc?.title ?? "exam_essentials").replace(/\s+/g, "_") + extension;
+      downloadBlob(blob, filename);
+    } catch (err) {
+      setError(
+        axios.isAxiosError(err)
+          ? err.response?.data?.detail ?? "Export failed."
+          : "Export failed."
+      );
+    } finally {
+      setExporting(null);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -178,13 +219,29 @@ export default function ExamEssentials() {
                 : "No items extracted yet. Click the button to run extraction."}
             </p>
           </div>
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {generating ? "Extracting…" : totalCount === 0 ? "Extract Key Info" : "Re-extract"}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleGenerate}
+              disabled={generating || exporting !== null}
+              className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {generating ? "Extracting…" : totalCount === 0 ? "Extract Key Info" : "Re-extract"}
+            </button>
+            <button
+              onClick={() => handleExport("md")}
+              disabled={exporting !== null || generating}
+              className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            >
+              {exporting === "md" ? "Downloading…" : "Download .md"}
+            </button>
+            <button
+              onClick={() => handleExport("pdf")}
+              disabled={exporting !== null || generating}
+              className="rounded-md border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+            >
+              {exporting === "pdf" ? "Downloading…" : "Download .pdf"}
+            </button>
+          </div>
         </div>
         {error && (
           <p className="mt-2 text-sm text-red-600">{error}</p>

@@ -10,6 +10,7 @@ from routers.documents import router as documents_router
 from routers.notes import router as notes_router
 from routers.search import router as search_router
 from routers.exam_essentials import router as exam_router
+from routers.export import router as export_router
 
 app = FastAPI(title="Traceable PDF Notes Platform API")
 
@@ -26,6 +27,7 @@ app.include_router(documents_router)
 app.include_router(notes_router)
 app.include_router(search_router)
 app.include_router(exam_router)
+app.include_router(export_router)
 
 
 @app.on_event("startup")

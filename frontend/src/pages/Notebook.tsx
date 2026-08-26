@@ -5,9 +5,25 @@ import {
   getDocument,
   getNotebook,
   updateNote,
+  getExportMarkdownUrl,
+  getExportPdfUrl,
   type DocumentDetail,
   type NotePublic,
 } from "../api/documents";
+import apiClient from "../api/client";
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  }, 200);
+}
 
 export default function Notebook() {
   const { id } = useParams<{ id: string }>();
@@ -16,6 +32,7 @@ export default function Notebook() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [unpinningId, setUnpinningId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState<"md" | "pdf" | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -68,6 +85,31 @@ export default function Notebook() {
     }
   }
 
+  async function handleExport(format: "md" | "pdf") {
+    if (!id) return;
+    setExporting(format);
+    setError(null);
+    try {
+      const url =
+        format === "md" ? getExportMarkdownUrl(id) : getExportPdfUrl(id);
+      const res = await apiClient.get(url, { responseType: "blob" });
+      const mimeType =
+        format === "md" ? "text/markdown" : "application/pdf";
+      const extension = format === "md" ? ".md" : ".pdf";
+      const blob = new Blob([res.data], { type: mimeType });
+      const filename = (doc?.title ?? "notebook").replace(/\s+/g, "_") + extension;
+      downloadBlob(blob, filename);
+    } catch (err) {
+      setError(
+        axios.isAxiosError(err)
+          ? err.response?.data?.detail ?? "Export failed."
+          : "Export failed."
+      );
+    } finally {
+      setExporting(null);
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center text-slate-500">
@@ -76,7 +118,7 @@ export default function Notebook() {
     );
   }
 
-  if (error || !doc) {
+  if (error && !doc) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
         <p className="text-red-600">{error ?? "Document not found."}</p>
@@ -91,17 +133,37 @@ export default function Notebook() {
     <div className="min-h-screen bg-slate-50">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b bg-white px-6 py-4">
         <div>
-          <Link to={`/documents/${doc.id}`} className="text-sm text-blue-600 hover:underline">
+          <Link to={`/documents/${doc?.id}`} className="text-sm text-blue-600 hover:underline">
             &larr; Back to workspace
           </Link>
           <h1 className="mt-1 text-xl font-semibold text-slate-900">
-            My Notebook &mdash; {doc.title}
+            My Notebook &mdash; {doc?.title}
           </h1>
           <p className="text-sm text-slate-500">
             Pinned and personally-edited notes for this document.
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleExport("md")}
+            disabled={exporting !== null}
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            {exporting === "md" ? "Downloading…" : "Download as Markdown"}
+          </button>
+          <button
+            onClick={() => handleExport("pdf")}
+            disabled={exporting !== null}
+            className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {exporting === "pdf" ? "Downloading…" : "Download as PDF"}
+          </button>
+        </div>
       </header>
+
+      {error && (
+        <div className="border-b bg-red-50 px-6 py-2 text-sm text-red-700">{error}</div>
+      )}
 
       <div className="mx-auto max-w-2xl p-6">
         {notes.length === 0 ? (
@@ -134,7 +196,7 @@ export default function Notebook() {
                 <p className="mt-2 text-xs text-slate-400">
                   {n.source_pages.length === 1
                     ? `Page ${n.source_pages[0]}`
-                    : `Pages ${n.source_pages[0]}&ndash;${n.source_pages[n.source_pages.length - 1]}`}
+                    : `Pages ${n.source_pages[0]}–${n.source_pages[n.source_pages.length - 1]}`}
                 </p>
               </li>
             ))}

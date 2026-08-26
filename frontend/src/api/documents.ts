@@ -214,3 +214,13 @@ export async function getExamEssentials(
   );
   return res.data;
 }
+
+/** Returns the direct download URL for the Markdown export. */
+export function getExportMarkdownUrl(id: string): string {
+  return `http://localhost:8000/api/documents/${id}/export/markdown`;
+}
+
+/** Returns the direct download URL for the PDF export. */
+export function getExportPdfUrl(id: string): string {
+  return `http://localhost:8000/api/documents/${id}/export/pdf`;
+}
