@@ -19,6 +19,7 @@ import { useWorkspaceStore } from "../store/workspaceStore";
 import PdfPane from "../components/PdfPane";
 import NotesPane from "../components/NotesPane";
 import SearchBar from "../components/SearchBar";
+import AssistantPanel from "../components/AssistantPanel";
 
 export default function DocumentViewer() {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +40,7 @@ export default function DocumentViewer() {
   const [summarizing, setSummarizing] = useState(false);
   const [buildingHierarchy, setBuildingHierarchy] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
+  const [assistantOpen, setAssistantOpen] = useState(false);
 
   const setActiveDocument = useWorkspaceStore((s) => s.setActiveDocument);
   const requestedNoteLevel = useWorkspaceStore((s) => s.requestedNoteLevel);
@@ -187,6 +189,7 @@ export default function DocumentViewer() {
   }
 
   return (
+    <>
     <div className="flex h-screen flex-col bg-slate-50">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b bg-white px-6 py-4">
         <div>
@@ -212,6 +215,12 @@ export default function DocumentViewer() {
           >
             Exam Essentials
           </Link>
+          <button
+            onClick={() => setAssistantOpen(true)}
+            className="rounded-md border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
+          >
+            🤖 Ask AI
+          </button>
           <button
             onClick={handleProcess}
             disabled={processing}
@@ -296,5 +305,11 @@ export default function DocumentViewer() {
         </div>
       </div>
     </div>
+    <AssistantPanel
+      documentId={doc.id}
+      isOpen={assistantOpen}
+      onClose={() => setAssistantOpen(false)}
+    />
+    </>
   );
 }
