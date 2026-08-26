@@ -49,12 +49,20 @@ export type NotePublic = {
   document_id: string;
   level: NoteLevel;
   text: string;
+  edited_text: string | null;
+  is_pinned: boolean;
+  user_id: string;
   topic_id: string | null;
   paragraph_id: number | null;
   source_chunk_ids: string[];
   source_pages: number[];
   source_bounding_boxes: BoundingBox[];
   created_at: string;
+};
+
+export type NoteUpdatePayload = {
+  edited_text?: string | null;
+  is_pinned?: boolean;
 };
 
 export type HierarchyResult = {
@@ -122,5 +130,18 @@ export async function getNotes(
   const res = await api.get<NotePublic[]>(`/api/documents/${id}/notes`, {
     params: { level },
   });
+  return res.data;
+}
+
+export async function getNotebook(id: string): Promise<NotePublic[]> {
+  const res = await api.get<NotePublic[]>(`/api/documents/${id}/notebook`);
+  return res.data;
+}
+
+export async function updateNote(
+  noteId: string,
+  payload: NoteUpdatePayload
+): Promise<NotePublic> {
+  const res = await api.patch<NotePublic>(`/api/notes/${noteId}`, payload);
   return res.data;
 }

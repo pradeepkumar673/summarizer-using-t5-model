@@ -216,8 +216,6 @@ async def summarize_document(document_id: str, current_user: UserPublic = Depend
         for pid in t["paragraph_ids"]:
             paragraph_to_topic[pid] = str(t["_id"])
 
-    # Idempotent re-summarization: wipe previous paragraph-level notes for this doc first.
-    # Also wipe any downstream roll-ups (topic/page/chapter), since they'd now be stale.
     await db.notes.delete_many(
         {"document_id": str(doc["_id"]), "level": {"$in": ["paragraph", "topic", "page", "chapter"]}}
     )
@@ -238,6 +236,9 @@ async def summarize_document(document_id: str, current_user: UserPublic = Depend
                 "document_id": str(doc["_id"]),
                 "level": "paragraph",
                 "text": summary,
+                "edited_text": None,
+                "is_pinned": False,
+                "user_id": current_user.id,
                 "topic_id": paragraph_to_topic.get(chunk_id_str),
                 "paragraph_id": chunk["paragraph_id"],
                 "source_chunk_ids": [chunk_id_str],
@@ -279,8 +280,13 @@ async def summarize_hierarchy(document_id: str, current_user: UserPublic = Depen
 
     await db.notes.delete_many({"document_id": doc_id_str, "level": {"$in": ["topic", "page", "chapter"]}})
 
-    # 1. topic level
-    topic_docs = await hierarchy_service.build_topic_notes(db, doc_id_str)
+    def _stamp(d: dict) -> dict:
+        d["user_id"] = current_user.id
+        d["is_pinned"] = False
+        d["edited_text"] = None
+        return d
+
+    topic_docs = [_stamp(d) for d in await hierarchy_service.build_topic_notes(db, doc_id_str)]
     inserted_topic_notes = []
     if topic_docs:
         result = await db.notes.insert_many(topic_docs)
@@ -292,8 +298,7 @@ async def summarize_hierarchy(document_id: str, current_user: UserPublic = Depen
         raw.sort(key=lambda n: topics_order.get(n.get("topic_id"), 0))
         inserted_topic_notes = raw
 
-    # 2. page level
-    page_docs = await hierarchy_service.build_page_notes(db, doc_id_str)
+    page_docs = [_stamp(d) for d in await hierarchy_service.build_page_notes(db, doc_id_str)]
     inserted_page_notes = []
     if page_docs:
         result = await db.notes.insert_many(page_docs)
@@ -301,10 +306,10 @@ async def summarize_hierarchy(document_id: str, current_user: UserPublic = Depen
         raw.sort(key=lambda n: n["source_pages"][0])
         inserted_page_notes = raw
 
-    # 3. chapter level
     chapter_doc = await hierarchy_service.build_chapter_note(db, doc_id_str)
     inserted_chapter_notes = []
     if chapter_doc:
+        chapter_doc = _stamp(chapter_doc)
         result = await db.notes.insert_one(chapter_doc)
         inserted = await db.notes.find_one({"_id": result.inserted_id})
         inserted_chapter_notes = [inserted]
@@ -326,5 +331,24 @@ async def get_notes(
     cursor = db.notes.find({"document_id": str(doc["_id"]), "level": level}).sort(
         [("source_pages", 1), ("paragraph_id", 1)]
     )
+    notes = await cursor.to_list(length=None)
+    return [note_doc_to_public(n) for n in notes]
+
+
+@router.get("/{document_id}/notebook", response_model=list[NotePublic])
+async def get_notebook(document_id: str, current_user: UserPublic = Depends(get_current_user)):
+    """The user's personal revision notebook: every note on this document
+    that they've pinned and/or personally edited."""
+    doc = await _get_owned_document(document_id, current_user.id)
+    cursor = db.notes.find(
+        {
+            "document_id": str(doc["_id"]),
+            "user_id": current_user.id,
+            "$or": [
+                {"is_pinned": True},
+                {"edited_text": {"$nin": [None, ""]}},
+            ],
+        }
+    ).sort([("level", 1), ("source_pages", 1)])
     notes = await cursor.to_list(length=None)
     return [note_doc_to_public(n) for n in notes]

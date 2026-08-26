@@ -4,6 +4,7 @@ from config import settings
 from database import ping_database, db
 from routers.auth import router as auth_router
 from routers.documents import router as documents_router
+from routers.notes import router as notes_router
 import summarization_service
 
 app = FastAPI(title="Traceable PDF Notes Platform API")
@@ -18,6 +19,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(documents_router)
+app.include_router(notes_router)
 
 
 @app.on_event("startup")
@@ -29,6 +31,7 @@ async def create_indexes():
     await db.topics.create_index("document_id")
     await db.topics.create_index([("document_id", 1), ("order_index", 1)])
     await db.notes.create_index([("document_id", 1), ("level", 1), ("source_page", 1)])
+    await db.notes.create_index([("document_id", 1), ("user_id", 1), ("is_pinned", 1)])
 
 
 @app.on_event("startup")

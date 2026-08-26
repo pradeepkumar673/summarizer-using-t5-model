@@ -129,7 +129,10 @@ class NotePublic(BaseModel):
     id: str
     document_id: str
     level: NoteLevel
-    text: str
+    text: str  # original AI-generated summary -- never mutated by edits
+    edited_text: str | None = None  # the user's personal rewrite, if any
+    is_pinned: bool = False
+    user_id: str  # owner of the note (== the document's owner_id)
     topic_id: str | None = None  # set for paragraph/topic notes; None for page/chapter
     paragraph_id: int | None = None  # only set for level="paragraph" (per-page chunk index)
     source_chunk_ids: list[str]  # every source chunk _id this note traces back to
@@ -138,12 +141,25 @@ class NotePublic(BaseModel):
     created_at: datetime
 
 
+class NoteUpdate(BaseModel):
+    """
+    PATCH payload. Uses pydantic's exclude_unset semantics at the router level:
+    a field omitted entirely is left untouched; a field explicitly sent as
+    null (e.g. {"edited_text": null}) clears it back to the original AI text.
+    """
+    edited_text: str | None = None
+    is_pinned: bool | None = None
+
+
 def note_doc_to_public(doc: dict) -> NotePublic:
     return NotePublic(
         id=str(doc["_id"]),
         document_id=doc["document_id"],
         level=doc["level"],
         text=doc["text"],
+        edited_text=doc.get("edited_text"),
+        is_pinned=doc.get("is_pinned", False),
+        user_id=doc.get("user_id", ""),
         topic_id=doc.get("topic_id"),
         paragraph_id=doc.get("paragraph_id"),
         source_chunk_ids=doc["source_chunk_ids"],

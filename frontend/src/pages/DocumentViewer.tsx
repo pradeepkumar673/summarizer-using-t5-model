@@ -164,6 +164,13 @@ export default function DocumentViewer() {
     }
   }
 
+  function handleNoteUpdated(updated: NotePublic) {
+    setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+    if (updated.level === "paragraph") {
+      setParagraphNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+    }
+  }
+
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center text-slate-500">Loading document...</div>;
   }
@@ -191,6 +198,12 @@ export default function DocumentViewer() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          <Link
+            to={`/documents/${doc.id}/notebook`}
+            className="rounded-md border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 hover:bg-amber-100"
+          >
+            My Notebook
+          </Link>
           <button
             onClick={handleProcess}
             disabled={processing}
@@ -262,11 +275,13 @@ export default function DocumentViewer() {
             <PanelResizeHandle className="w-1.5 cursor-col-resize bg-slate-200 transition-colors hover:bg-blue-400" />
             <Panel defaultSize={35} minSize={20}>
               <NotesPane
+                documentId={doc.id}
                 notes={notes}
                 chunks={doc.chunks}
                 notesLoading={notesLoading}
                 noteLevel={noteLevel}
                 onNoteLevelChange={setNoteLevel}
+                onNoteUpdated={handleNoteUpdated}
               />
             </Panel>
           </PanelGroup>

@@ -7,6 +7,7 @@ import HealthCheck from "./pages/HealthCheck";
 import Upload from "./pages/Upload";
 import Documents from "./pages/Documents";
 import DocumentViewer from "./pages/DocumentViewer";
+import Notebook from "./pages/Notebook";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/upload" element={<Upload />} />
         <Route path="/documents" element={<Documents />} />
         <Route path="/documents/:id" element={<DocumentViewer />} />
+        <Route path="/documents/:id/notebook" element={<Notebook />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
