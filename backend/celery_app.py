@@ -1,6 +1,10 @@
-# backend/celery_app.py
+# Force Redis client to use RESP2 protocol globally for compatibility with Windows Redis 5.x server
+import redis.connection
+redis.connection.DEFAULT_RESP_VERSION = 2
+
 from celery import Celery
 from config import settings
+
 
 celery_app = Celery(
     "pdf_notes_platform",

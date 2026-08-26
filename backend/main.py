@@ -1,5 +1,10 @@
+# Force Redis client to use RESP2 protocol globally for compatibility with Windows Redis 5.x server
+import redis.connection
+redis.connection.DEFAULT_RESP_VERSION = 2
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 
 import embedding_service
 import summarization_service
