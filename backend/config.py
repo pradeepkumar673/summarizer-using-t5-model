@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24
     frontend_origin: str = "http://localhost:5173"
+    upload_dir: str = "uploads"
 
     model_config = SettingsConfigDict(
         env_file=".env",
