@@ -11,6 +11,7 @@ import {
   summarizeHierarchy,
   getNotes,
   getDocumentStatus,
+  retryDocumentPipeline,
   type DocumentDetail,
   type TopicPublic,
   type NotePublic,
@@ -195,6 +196,18 @@ export default function DocumentViewer() {
     }
   }
 
+  async function handleRetry() {
+    if (!id) return;
+    setStatus("queued");
+    try {
+      await retryDocumentPipeline(id);
+    } catch (err) {
+      setError(
+        axios.isAxiosError(err) ? err.response?.data?.detail ?? "Failed to restart ingestion." : "Failed to restart ingestion."
+      );
+    }
+  }
+
   function handleNoteUpdated(updated: NotePublic) {
     setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
     if (updated.level === "paragraph") {
@@ -221,8 +234,14 @@ export default function DocumentViewer() {
     if (status === "ready") return null;
     if (status === "failed") {
       return (
-        <div className="border-b bg-red-50 px-6 py-3 text-sm text-red-800 font-medium">
-          Processing failed. Please try again.
+        <div className="border-b bg-red-50 px-6 py-3 text-sm text-red-850 flex items-center justify-between font-medium">
+          <span>Processing failed. Please try again.</span>
+          <button
+            onClick={handleRetry}
+            className="text-xs bg-red-600 hover:bg-red-700 text-white font-semibold px-3 py-1.5 rounded transition-all shadow"
+          >
+            Restart Ingestion
+          </button>
         </div>
       );
     }
@@ -238,11 +257,19 @@ export default function DocumentViewer() {
     };
     const label = stageMap[status] || status;
     return (
-      <div className="border-b bg-blue-50 px-6 py-3 text-sm text-blue-800 flex items-center gap-4 font-medium">
-        <span>{label}</span>
-        <div className="flex-1 max-w-xs h-2.5 bg-blue-200 rounded-full overflow-hidden">
-          <div className="h-full bg-blue-600 rounded-full animate-pulse" style={{ width: "100%" }} />
+      <div className="border-b bg-blue-50 px-6 py-3 text-sm text-blue-800 flex items-center justify-between gap-4 font-medium">
+        <div className="flex items-center gap-4 flex-1">
+          <span>{label}</span>
+          <div className="flex-1 max-w-xs h-2.5 bg-blue-200 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-600 rounded-full animate-pulse" style={{ width: "100%" }} />
+          </div>
         </div>
+        <button
+          onClick={handleRetry}
+          className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-1.5 rounded transition-all shadow"
+        >
+          Force Restart Ingestion
+        </button>
       </div>
     );
   };

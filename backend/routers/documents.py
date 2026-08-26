@@ -87,6 +87,21 @@ async def get_document_status(
     return {"status": doc["status"]}
 
 
+@router.post("/{document_id}/retry")
+async def retry_document_pipeline(
+    document_id: str,
+    current_user: UserPublic = Depends(get_current_user),
+):
+    doc = await _get_owned_document(document_id, current_user.id)
+    await db.documents.update_one(
+        {"_id": ObjectId(document_id)},
+        {"$set": {"status": "queued"}}
+    )
+    process_document_pipeline.delay(document_id)
+    return {"status": "queued"}
+
+
+
 @router.get("", response_model=list[DocumentPublic])
 async def list_documents(current_user: UserPublic = Depends(get_current_user)):
     cursor = db.documents.find({"owner_id": current_user.id}).sort("upload_date", -1)

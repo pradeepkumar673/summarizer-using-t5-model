@@ -233,3 +233,9 @@ export async function getDocumentStatus(id: string): Promise<{ status: string }>
   return res.data;
 }
 
+export async function retryDocumentPipeline(id: string): Promise<{ status: string }> {
+  const res = await api.post<{ status: string }>(`/api/documents/${id}/retry`);
+  return res.data;
+}
+
+
