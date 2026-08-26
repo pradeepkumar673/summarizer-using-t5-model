@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
 import axios from "axios";
+import { Group as PanelGroup, Panel, Separator as PanelResizeHandle } from "react-resizable-panels";
 import {
   getDocument,
   getDocumentFileUrl,
@@ -17,25 +15,22 @@ import {
   type NotePublic,
   type NoteLevel,
 } from "../api/documents";
-
-pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-
-const NOTE_LEVELS: { value: NoteLevel; label: string }[] = [
-  { value: "paragraph", label: "Paragraph" },
-  { value: "topic", label: "Topic" },
-  { value: "page", label: "Page" },
-  { value: "chapter", label: "Chapter" },
-];
+import { useWorkspaceStore } from "../store/workspaceStore";
+import PdfPane from "../components/PdfPane";
+import NotesPane from "../components/NotesPane";
 
 export default function DocumentViewer() {
   const { id } = useParams<{ id: string }>();
-
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [topics, setTopics] = useState<TopicPublic[]>([]);
   const [notes, setNotes] = useState<NotePublic[]>([]);
+  // Dedicated cache of paragraph-level notes, kept independent of whatever
+  // level the Notes tab is currently showing -- click-to-highlight from the
+  // PDF always resolves against paragraph notes (the only 1:1 chunk<->note
+  // level), regardless of which roll-up tab is active.
+  const [paragraphNotes, setParagraphNotes] = useState<NotePublic[]>([]);
   const [noteLevel, setNoteLevel] = useState<NoteLevel>("paragraph");
   const [numPages, setNumPages] = useState(0);
-
   const [loading, setLoading] = useState(true);
   const [notesLoading, setNotesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,10 +39,13 @@ export default function DocumentViewer() {
   const [buildingHierarchy, setBuildingHierarchy] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
 
+  const setActiveDocument = useWorkspaceStore((s) => s.setActiveDocument);
+  const requestedNoteLevel = useWorkspaceStore((s) => s.requestedNoteLevel);
+
   useEffect(() => {
     if (!id) return;
+    setActiveDocument(id);
     let cancelled = false;
-
     async function load() {
       setLoading(true);
       setError(null);
@@ -55,60 +53,68 @@ export default function DocumentViewer() {
         const docDetail = await getDocument(id!);
         if (cancelled) return;
         setDoc(docDetail);
-
         try {
           const topicsList = await getTopics(id!);
           if (!cancelled) setTopics(topicsList);
         } catch {
-          // No topics yet is expected for unprocessed documents - not an error
+          // no topics yet -- fine
         }
-
         try {
           const notesList = await getNotes(id!, noteLevel);
-          if (!cancelled) setNotes(notesList);
+          if (!cancelled) {
+            setNotes(notesList);
+            if (noteLevel === "paragraph") setParagraphNotes(notesList);
+          }
         } catch {
-          // No notes yet is expected before summarization has been run - not an error
+          // no notes yet -- fine
         }
       } catch (err) {
         if (!cancelled) {
           setError(
-            axios.isAxiosError(err)
-              ? err.response?.data?.detail ?? "Failed to load document."
-              : "Failed to load document."
+            axios.isAxiosError(err) ? err.response?.data?.detail ?? "Failed to load document." : "Failed to load document."
           );
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
-
     load();
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
     if (!id || loading) return;
     let cancelled = false;
-
     async function loadNotesForLevel() {
       setNotesLoading(true);
       try {
         const notesList = await getNotes(id!, noteLevel);
-        if (!cancelled) setNotes(notesList);
+        if (!cancelled) {
+          setNotes(notesList);
+          if (noteLevel === "paragraph") setParagraphNotes(notesList);
+        }
       } catch {
         if (!cancelled) setNotes([]);
       } finally {
         if (!cancelled) setNotesLoading(false);
       }
     }
-
     loadNotesForLevel();
     return () => {
       cancelled = true;
     };
   }, [id, noteLevel, loading]);
+
+  // A paragraph was clicked in the PDF -- switch the Notes tab to
+  // "paragraph" level so the target note is actually in `notes` to scroll to.
+  useEffect(() => {
+    if (requestedNoteLevel && requestedNoteLevel !== noteLevel) {
+      setNoteLevel(requestedNoteLevel);
+    }
+  }, [requestedNoteLevel, noteLevel]);
 
   async function handleProcess() {
     if (!id) return;
@@ -119,11 +125,7 @@ export default function DocumentViewer() {
       setTopics(topicsList);
       setDoc((prev) => (prev ? { ...prev, status: "segmented" } : prev));
     } catch (err) {
-      setError(
-        axios.isAxiosError(err)
-          ? err.response?.data?.detail ?? "Failed to process document."
-          : "Failed to process document."
-      );
+      setError(axios.isAxiosError(err) ? err.response?.data?.detail ?? "Failed to process document." : "Failed to process document.");
     } finally {
       setProcessing(false);
     }
@@ -135,15 +137,10 @@ export default function DocumentViewer() {
     setNotesError(null);
     try {
       const generated = await summarizeDocument(id);
-      if (noteLevel === "paragraph") {
-        setNotes(generated);
-      }
+      setParagraphNotes(generated);
+      if (noteLevel === "paragraph") setNotes(generated);
     } catch (err) {
-      setNotesError(
-        axios.isAxiosError(err)
-          ? err.response?.data?.detail ?? "Failed to generate notes."
-          : "Failed to generate notes."
-      );
+      setNotesError(axios.isAxiosError(err) ? err.response?.data?.detail ?? "Failed to generate notes." : "Failed to generate notes.");
     } finally {
       setSummarizing(false);
     }
@@ -160,9 +157,7 @@ export default function DocumentViewer() {
       else if (noteLevel === "chapter") setNotes(result.chapter);
     } catch (err) {
       setNotesError(
-        axios.isAxiosError(err)
-          ? err.response?.data?.detail ?? "Failed to build topic/page/chapter roll-up."
-          : "Failed to build topic/page/chapter roll-up."
+        axios.isAxiosError(err) ? err.response?.data?.detail ?? "Failed to build topic/page/chapter roll-up." : "Failed to build topic/page/chapter roll-up."
       );
     } finally {
       setBuildingHierarchy(false);
@@ -170,13 +165,8 @@ export default function DocumentViewer() {
   }
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center text-slate-500">
-        Loading document...
-      </div>
-    );
+    return <div className="flex min-h-screen items-center justify-center text-slate-500">Loading document...</div>;
   }
-
   if (error || !doc) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
@@ -189,7 +179,7 @@ export default function DocumentViewer() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="flex h-screen flex-col bg-slate-50">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b bg-white px-6 py-4">
         <div>
           <Link to="/documents" className="text-sm text-blue-600 hover:underline">
@@ -228,34 +218,25 @@ export default function DocumentViewer() {
 
       {summarizing && (
         <div className="border-b bg-indigo-50 px-6 py-3 text-sm text-indigo-800">
-          Running real T5 inference on every paragraph in this document. On CPU this can
-          legitimately take a minute or more for longer documents.
+          Running real T5 inference on every paragraph in this document. On CPU this can legitimately take a minute or more.
         </div>
       )}
       {buildingHierarchy && (
         <div className="border-b bg-purple-50 px-6 py-3 text-sm text-purple-800">
-          Rolling up paragraph notes into topic, page, and chapter summaries &ndash; this
-          re-summarizes with T5 at each level and can take a little while too.
+          Rolling up paragraph notes into topic, page, and chapter summaries.
         </div>
       )}
-      {notesError && (
-        <div className="border-b bg-red-50 px-6 py-3 text-sm text-red-700">{notesError}</div>
-      )}
+      {notesError && <div className="border-b bg-red-50 px-6 py-3 text-sm text-red-700">{notesError}</div>}
 
-      <div className="grid grid-cols-1 gap-6 p-6 lg:grid-cols-[220px_1fr_360px]">
-        <aside className="space-y-2">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Topics
-          </h2>
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="w-56 shrink-0 overflow-auto border-r bg-white p-4">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">Topics</h2>
           {topics.length === 0 ? (
             <p className="text-sm text-slate-400">No topics yet. Click "Segment Topics" above.</p>
           ) : (
             <ul className="space-y-1">
               {topics.map((t) => (
-                <li
-                  key={t.id}
-                  className="rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-slate-100"
-                >
+                <li key={t.id} className="rounded-md px-2 py-1 text-sm text-slate-700 hover:bg-slate-100">
                   <span className="font-medium">{t.title}</span>
                   <span className="ml-1 text-xs text-slate-400">
                     (p. {t.page_range[0]}&ndash;{t.page_range[1]})
@@ -266,77 +247,30 @@ export default function DocumentViewer() {
           )}
         </aside>
 
-        <main className="flex flex-col items-center gap-4">
-          <Document
-            file={getDocumentFileUrl(doc.id)}
-            onLoadSuccess={({ numPages: n }) => setNumPages(n)}
-            onLoadError={(err) => setError(`Failed to render PDF: ${err.message}`)}
-            loading={<p className="text-sm text-slate-500">Loading PDF...</p>}
-          >
-            {Array.from({ length: numPages }, (_, i) => (
-              <Page
-                key={i}
-                pageNumber={i + 1}
-                className="mb-4 shadow border border-slate-200"
-                width={500}
+        <div className="flex-1 overflow-hidden">
+          <PanelGroup orientation="horizontal" className="h-full">
+            <Panel defaultSize={65} minSize={30}>
+              <PdfPane
+                fileUrl={getDocumentFileUrl(doc.id)}
+                numPages={numPages || doc.total_pages}
+                chunks={doc.chunks}
+                paragraphNotes={paragraphNotes}
+                onNumPages={setNumPages}
+                onLoadError={setError}
               />
-            ))}
-          </Document>
-        </main>
-
-        <aside className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-              Notes {notes.length > 0 && `(${notes.length})`}
-            </h2>
-          </div>
-
-          <div className="flex gap-1 rounded-md bg-slate-100 p-1">
-            {NOTE_LEVELS.map((l) => (
-              <button
-                key={l.value}
-                onClick={() => setNoteLevel(l.value)}
-                className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
-                  noteLevel === l.value
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                {l.label}
-              </button>
-            ))}
-          </div>
-
-          {notesLoading ? (
-            <p className="text-sm text-slate-400">Loading {noteLevel} notes...</p>
-          ) : notes.length === 0 ? (
-            <p className="text-sm text-slate-400">
-              {noteLevel === "paragraph"
-                ? 'No notes yet. Click "Generate Notes" above.'
-                : `No ${noteLevel}-level notes yet. Generate paragraph notes first, then click "Build Topic/Page/Chapter Roll-up".`}
-            </p>
-          ) : (
-            <ul className="space-y-3">
-              {notes.map((n) => (
-                <li
-                  key={n.id}
-                  className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm"
-                >
-                  <p className="text-sm text-slate-800">{n.text}</p>
-                  <p className="mt-2 text-xs text-slate-400">
-                    {n.source_pages.length === 1
-                      ? `Page ${n.source_pages[0]}`
-                      : `Pages ${n.source_pages[0]}&ndash;${n.source_pages[n.source_pages.length - 1]}`}
-                    {n.paragraph_id !== null && ` &bull; paragraph #${n.paragraph_id}`}
-                    {" &bull; "}
-                    from {n.source_chunk_ids.length} paragraph
-                    {n.source_chunk_ids.length === 1 ? "" : "s"}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </aside>
+            </Panel>
+            <PanelResizeHandle className="w-1.5 cursor-col-resize bg-slate-200 transition-colors hover:bg-blue-400" />
+            <Panel defaultSize={35} minSize={20}>
+              <NotesPane
+                notes={notes}
+                chunks={doc.chunks}
+                notesLoading={notesLoading}
+                noteLevel={noteLevel}
+                onNoteLevelChange={setNoteLevel}
+              />
+            </Panel>
+          </PanelGroup>
+        </div>
       </div>
     </div>
   );
