@@ -14,6 +14,7 @@ from routers.export import router as export_router
 from routers.assistant import router as assistant_router
 from routers.activity import router as activity_router
 from routers.graph import router as graph_router
+from routers.viva import router as viva_router
 
 app = FastAPI(title="Traceable PDF Notes Platform API")
 
@@ -34,6 +35,7 @@ app.include_router(export_router)
 app.include_router(assistant_router)
 app.include_router(activity_router)
 app.include_router(graph_router)
+app.include_router(viva_router)
 
 
 @app.on_event("startup")
@@ -63,6 +65,10 @@ async def create_indexes():
     )
     # STEP 14: knowledge graph index
     await db.knowledge_graphs.create_index("document_id", unique=True)
+    # STEP 15: viva sessions index
+    await db.viva_sessions.create_index(
+        [("user_id", 1), ("document_id", 1), ("created_at", -1)]
+    )
 
 
 @app.on_event("startup")

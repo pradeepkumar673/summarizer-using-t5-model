@@ -223,6 +223,12 @@ export default function DocumentViewer() {
           >
             🕸️ Knowledge Graph
           </Link>
+          <Link
+            to={`/documents/${doc.id}/viva`}
+            className="rounded-md border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
+          >
+            🎓 Viva Simulator
+          </Link>
           <button
             onClick={() => setAssistantOpen(true)}
             className="rounded-md border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
