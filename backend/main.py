@@ -13,6 +13,7 @@ from routers.exam_essentials import router as exam_router
 from routers.export import router as export_router
 from routers.assistant import router as assistant_router
 from routers.activity import router as activity_router
+from routers.graph import router as graph_router
 
 app = FastAPI(title="Traceable PDF Notes Platform API")
 
@@ -32,6 +33,7 @@ app.include_router(exam_router)
 app.include_router(export_router)
 app.include_router(assistant_router)
 app.include_router(activity_router)
+app.include_router(graph_router)
 
 
 @app.on_event("startup")
@@ -59,6 +61,8 @@ async def create_indexes():
     await db.activity_logs.create_index(
         [("document_id", 1), ("user_id", 1), ("paragraph_id", 1), ("timestamp", -1)]
     )
+    # STEP 14: knowledge graph index
+    await db.knowledge_graphs.create_index("document_id", unique=True)
 
 
 @app.on_event("startup")

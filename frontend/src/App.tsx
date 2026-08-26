@@ -9,6 +9,7 @@ import Documents from "./pages/Documents";
 import DocumentViewer from "./pages/DocumentViewer";
 import ExamEssentials from "./pages/ExamEssentials";
 import Notebook from "./pages/Notebook";
+import KnowledgeGraph from "./pages/KnowledgeGraph";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/documents/:id" element={<DocumentViewer />} />
         <Route path="/documents/:id/notebook" element={<Notebook />} />
         <Route path="/documents/:id/exam-essentials" element={<ExamEssentials />} />
+        <Route path="/documents/:id/graph" element={<KnowledgeGraph />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

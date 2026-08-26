@@ -217,6 +217,12 @@ export default function DocumentViewer() {
           >
             Exam Essentials
           </Link>
+          <Link
+            to={`/documents/${doc.id}/graph`}
+            className="rounded-md border border-teal-300 bg-teal-50 px-4 py-2 text-sm font-medium text-teal-700 hover:bg-teal-100"
+          >
+            🕸️ Knowledge Graph
+          </Link>
           <button
             onClick={() => setAssistantOpen(true)}
             className="rounded-md border border-violet-300 bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-100"
