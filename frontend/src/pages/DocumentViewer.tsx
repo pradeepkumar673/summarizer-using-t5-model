@@ -20,6 +20,7 @@ import PdfPane from "../components/PdfPane";
 import NotesPane from "../components/NotesPane";
 import SearchBar from "../components/SearchBar";
 import AssistantPanel from "../components/AssistantPanel";
+import { HeatmapLegend } from "../components/HeatmapOverlay";
 
 export default function DocumentViewer() {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +42,7 @@ export default function DocumentViewer() {
   const [buildingHierarchy, setBuildingHierarchy] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
   const setActiveDocument = useWorkspaceStore((s) => s.setActiveDocument);
   const requestedNoteLevel = useWorkspaceStore((s) => s.requestedNoteLevel);
@@ -222,6 +224,16 @@ export default function DocumentViewer() {
             🤖 Ask AI
           </button>
           <button
+            onClick={() => setShowHeatmap((v) => !v)}
+            className={`rounded-md border px-4 py-2 text-sm font-medium transition-colors ${
+              showHeatmap
+                ? "border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
+                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            {showHeatmap ? "🔥 Hide Heatmap" : "🔥 Heatmap"}
+          </button>
+          <button
             onClick={handleProcess}
             disabled={processing}
             className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -257,6 +269,11 @@ export default function DocumentViewer() {
         </div>
       )}
       {notesError && <div className="border-b bg-red-50 px-6 py-3 text-sm text-red-700">{notesError}</div>}
+      {showHeatmap && (
+        <div className="flex items-center gap-3 border-b bg-slate-50 px-6 py-2">
+          <HeatmapLegend />
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-56 shrink-0 overflow-auto border-r bg-white p-4">
@@ -285,6 +302,8 @@ export default function DocumentViewer() {
                 numPages={numPages || doc.total_pages}
                 chunks={doc.chunks}
                 paragraphNotes={paragraphNotes}
+                documentId={doc.id}
+                showHeatmap={showHeatmap}
                 onNumPages={setNumPages}
                 onLoadError={setError}
               />

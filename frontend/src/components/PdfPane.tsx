@@ -5,6 +5,7 @@ import "react-pdf/dist/Page/TextLayer.css";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { buildChunkIndex, resolveNoteHighlights } from "../lib/highlights";
 import type { ChunkPublic, NotePublic } from "../api/documents";
+import HeatmapOverlay from "./HeatmapOverlay";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
@@ -25,6 +26,8 @@ interface PdfPaneProps {
   numPages: number;
   chunks: ChunkPublic[];
   paragraphNotes: NotePublic[];
+  documentId: string;
+  showHeatmap: boolean;
   onNumPages: (n: number) => void;
   onLoadError: (message: string) => void;
 }
@@ -34,6 +37,8 @@ export default function PdfPane({
   numPages,
   chunks,
   paragraphNotes,
+  documentId,
+  showHeatmap,
   onNumPages,
   onLoadError,
 }: PdfPaneProps) {
@@ -146,6 +151,7 @@ export default function PdfPane({
     return () => cancelAnimationFrame(raf);
   }, [highlightScrollToken]);
 
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b bg-white px-3 py-2">
@@ -198,6 +204,7 @@ export default function PdfPane({
               >
                 <Page pageNumber={pageNumber} width={renderWidth} onLoadSuccess={handlePageLoadSuccess(pageNumber)} />
 
+                {/* Chunk click overlays (note traceability) */}
                 {scaleInfo &&
                   pageChunks.map((chunk) => {
                     const clickable = Boolean(chunkIdToNote[chunk.id]);
@@ -218,6 +225,17 @@ export default function PdfPane({
                     );
                   })}
 
+                {/* Heatmap overlays — rendered per page using HeatmapOverlay */}
+                {scaleInfo && showHeatmap && (
+                  <HeatmapOverlay
+                    documentId={documentId}
+                    chunks={pageChunks}
+                    pageScales={{ [pageNumber]: scaleInfo }}
+                    visiblePages={[pageNumber]}
+                  />
+                )}
+
+                {/* Search / note active-highlight overlays */}
                 {scaleInfo &&
                   pageHighlights.map((h) => (
                     <div

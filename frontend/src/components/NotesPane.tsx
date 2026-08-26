@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { updateNote, type ChunkPublic, type NoteLevel, type NotePublic } from "../api/documents";
+import { logActivity } from "../api/activity";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { buildChunkIndex, resolveNoteHighlights } from "../lib/highlights";
 
@@ -51,6 +52,15 @@ export default function NotesPane({
 
   function handleNoteClick(note: NotePublic) {
     activateNote(note.id, resolveNoteHighlights(note, chunkIndex));
+    // Log note_click for each source paragraph
+    if (note.paragraph_id != null) {
+      logActivity(documentId, note.paragraph_id, "note_click");
+    } else {
+      note.source_chunk_ids.forEach(() => {
+        if (note.paragraph_id != null)
+          logActivity(documentId, note.paragraph_id, "note_click");
+      });
+    }
   }
 
   function startEdit(e: React.MouseEvent, note: NotePublic) {

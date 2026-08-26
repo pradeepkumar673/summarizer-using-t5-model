@@ -14,6 +14,7 @@ import {
   type AssistantSource,
 } from "../api/assistant";
 import { useWorkspaceStore } from "../store/workspaceStore";
+import { logActivity } from "../api/activity";
 
 interface Props {
   documentId: string;
@@ -162,6 +163,10 @@ export default function AssistantPanel({ documentId, isOpen, onClose }: Props) {
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, assistantMsg]);
+      // Log doubt_asked for each source paragraph (fire-and-forget)
+      res.sources.forEach((src) => {
+        logActivity(documentId, src.paragraph_id, "doubt_asked");
+      });
     } catch (err) {
       setError(
         axios.isAxiosError(err)
