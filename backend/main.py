@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
-from database import ping_database
+from database import ping_database, db
+from routers.auth import router as auth_router
 
 app = FastAPI(title="Traceable PDF Notes Platform API")
 
@@ -12,6 +13,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
+
+
+@app.on_event("startup")
+async def create_indexes():
+    await db.users.create_index("email", unique=True)
 
 
 @app.get("/api/health")

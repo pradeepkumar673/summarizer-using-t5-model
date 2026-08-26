@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     mongodb_db_name: str = "pdf_notes_platform"
     jwt_secret: str = "changeme"
     jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60 * 24
     frontend_origin: str = "http://localhost:5173"
 
     model_config = SettingsConfigDict(
