@@ -1,33 +1,35 @@
 import os
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from fastapi.responses import FileResponse
-from bson import ObjectId
-from bson.errors import InvalidId
+from typing import Literal
 
-from database import db
+from bson import ObjectId
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
+
+import hierarchy_service
 from config import settings
+from database import db
 from deps import get_current_user
 from models import (
-    UserPublic,
-    DocumentPublic,
+    ChunkPublic,
     DocumentDetail,
-    TopicPublic,
+    DocumentPublic,
     NotePublic,
-    document_doc_to_public,
+    TopicPublic,
+    UserPublic,
     chunk_doc_to_public,
-    topic_doc_to_public,
+    document_doc_to_public,
     note_doc_to_public,
+    topic_doc_to_public,
 )
 from pdf_extraction import extract_blocks_from_pdf
 from preprocessing import clean_chunks, split_into_sentences
+from summarization_service import is_ready as summarizer_is_ready
+from summarization_service import summarize_text
 from topic_segmentation import segment_topics
-from summarization_service import is_ready as summarizer_is_ready, summarize_text
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
-
-os.makedirs(settings.upload_dir, exist_ok=True)
 
 
 @router.post("/upload", response_model=DocumentPublic, status_code=status.HTTP_201_CREATED)
@@ -40,6 +42,7 @@ async def upload_document(
 
     file_id = uuid.uuid4().hex
     safe_filename = f"{file_id}.pdf"
+    os.makedirs(settings.upload_dir, exist_ok=True)
     file_path = os.path.join(settings.upload_dir, safe_filename)
 
     contents = await file.read()
@@ -50,7 +53,7 @@ async def upload_document(
         f.write(contents)
 
     document_doc = {
-        "title": file.filename,
+        "title": file.filename or "Untitled.pdf",
         "owner_id": current_user.id,
         "upload_date": datetime.now(timezone.utc),
         "total_pages": 0,
@@ -102,14 +105,12 @@ async def list_documents(current_user: UserPublic = Depends(get_current_user)):
 async def _get_owned_document(document_id: str, owner_id: str) -> dict:
     try:
         oid = ObjectId(document_id)
-    except InvalidId:
+    except Exception:
         raise HTTPException(status_code=404, detail="Document not found")
 
     doc = await db.documents.find_one({"_id": oid})
-    if not doc:
+    if not doc or doc["owner_id"] != owner_id:
         raise HTTPException(status_code=404, detail="Document not found")
-    if doc["owner_id"] != owner_id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this document")
     return doc
 
 
@@ -123,60 +124,36 @@ async def get_document(document_id: str, current_user: UserPublic = Depends(get_
     chunk_docs = await chunk_cursor.to_list(length=None)
 
     public = document_doc_to_public(doc)
-    return DocumentDetail(
-        **public.model_dump(),
-        chunks=[chunk_doc_to_public(c) for c in chunk_docs],
-    )
+    return DocumentDetail(**public.model_dump(), chunks=[chunk_doc_to_public(c) for c in chunk_docs])
 
 
 @router.get("/{document_id}/file")
 async def get_document_file(document_id: str, current_user: UserPublic = Depends(get_current_user)):
     doc = await _get_owned_document(document_id, current_user.id)
     file_path = doc["file_path"]
-
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found on server")
-
-    return FileResponse(
-        path=file_path,
-        media_type="application/pdf",
-        filename=doc["title"],
-    )
+    return FileResponse(file_path, media_type="application/pdf", filename=doc["title"])
 
 
 @router.post("/{document_id}/process", response_model=list[TopicPublic])
 async def process_document(document_id: str, current_user: UserPublic = Depends(get_current_user)):
     doc = await _get_owned_document(document_id, current_user.id)
 
-    if doc["status"] not in ("ready", "segmented"):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Document is not ready for processing (status: {doc['status']})",
-        )
-
     chunk_cursor = db.chunks.find({"document_id": str(doc["_id"])}).sort(
         [("page_number", 1), ("paragraph_id", 1)]
     )
     raw_chunks = await chunk_cursor.to_list(length=None)
-
     if not raw_chunks:
-        raise HTTPException(status_code=400, detail="No extracted text found for this document")
+        raise HTTPException(status_code=400, detail="Document has no extracted content to process")
 
-    # 1. Preprocessing: strip page-number noise + repeated headers/footers, normalize whitespace
     cleaned = clean_chunks(raw_chunks)
 
-    # 2. Real spaCy sentence segmentation per block (kept for downstream summarization
-    #    steps; topic segmentation itself groups at block level to preserve bbox traceability)
     for c in cleaned:
         c["sentences"] = split_into_sentences(c["text"])
 
-    # 3. Topic segmentation via font-size/bold heuristics + text-pattern fallback
     topic_dicts = segment_topics(cleaned)
 
-    if not topic_dicts:
-        raise HTTPException(status_code=422, detail="Topic segmentation produced no topics")
-
-    # Idempotent re-processing: wipe any previous topics for this document first
     await db.topics.delete_many({"document_id": str(doc["_id"])})
 
     topic_docs = [
@@ -189,13 +166,16 @@ async def process_document(document_id: str, current_user: UserPublic = Depends(
         }
         for t in topic_dicts
     ]
-    result = await db.topics.insert_many(topic_docs)
+
+    inserted_topics = []
+    if topic_docs:
+        result = await db.topics.insert_many(topic_docs)
+        inserted_topics = await db.topics.find(
+            {"_id": {"$in": list(result.inserted_ids)}}
+        ).sort("order_index", 1).to_list(length=None)
 
     await db.documents.update_one({"_id": doc["_id"]}, {"$set": {"status": "segmented"}})
 
-    inserted_topics = await db.topics.find(
-        {"_id": {"$in": result.inserted_ids}}
-    ).sort("order_index", 1).to_list(length=None)
     return [topic_doc_to_public(t) for t in inserted_topics]
 
 
@@ -209,7 +189,7 @@ async def get_topics(document_id: str, current_user: UserPublic = Depends(get_cu
 
 # --- STEP 5: paragraph-level T5 summarization ---
 
-MIN_WORDS_FOR_SUMMARY = 8  # skip lone headings / page-artifact blocks - nothing to summarize
+MIN_WORDS_FOR_SUMMARY = 8
 
 
 @router.post("/{document_id}/summarize", response_model=list[NotePublic])
@@ -229,7 +209,6 @@ async def summarize_document(document_id: str, current_user: UserPublic = Depend
     if not raw_chunks:
         raise HTTPException(status_code=400, detail="Document has no extracted content to summarize.")
 
-    # Build a chunk-_id -> topic-_id lookup so each Note can be linked back to its topic
     topic_cursor = db.topics.find({"document_id": str(doc["_id"])})
     topics = await topic_cursor.to_list(length=None)
     paragraph_to_topic: dict[str, str] = {}
@@ -237,8 +216,11 @@ async def summarize_document(document_id: str, current_user: UserPublic = Depend
         for pid in t["paragraph_ids"]:
             paragraph_to_topic[pid] = str(t["_id"])
 
-    # Idempotent re-summarization: wipe previous paragraph-level notes for this doc first
-    await db.notes.delete_many({"document_id": str(doc["_id"]), "level": "paragraph"})
+    # Idempotent re-summarization: wipe previous paragraph-level notes for this doc first.
+    # Also wipe any downstream roll-ups (topic/page/chapter), since they'd now be stale.
+    await db.notes.delete_many(
+        {"document_id": str(doc["_id"]), "level": {"$in": ["paragraph", "topic", "page", "chapter"]}}
+    )
 
     note_docs = []
     for chunk in raw_chunks:
@@ -254,12 +236,13 @@ async def summarize_document(document_id: str, current_user: UserPublic = Depend
         note_docs.append(
             {
                 "document_id": str(doc["_id"]),
-                "topic_id": paragraph_to_topic.get(chunk_id_str),
-                "paragraph_id": chunk["paragraph_id"],
                 "level": "paragraph",
                 "text": summary,
-                "source_page": chunk["page_number"],
-                "source_bounding_box": chunk["bounding_box"],
+                "topic_id": paragraph_to_topic.get(chunk_id_str),
+                "paragraph_id": chunk["paragraph_id"],
+                "source_chunk_ids": [chunk_id_str],
+                "source_pages": [chunk["page_number"]],
+                "source_bounding_boxes": [chunk["bounding_box"]],
                 "created_at": datetime.now(timezone.utc),
             }
         )
@@ -269,20 +252,79 @@ async def summarize_document(document_id: str, current_user: UserPublic = Depend
         result = await db.notes.insert_many(note_docs)
         inserted_notes = await db.notes.find(
             {"_id": {"$in": list(result.inserted_ids)}}
-        ).sort([("source_page", 1), ("paragraph_id", 1)]).to_list(length=None)
+        ).sort([("source_pages", 1), ("paragraph_id", 1)]).to_list(length=None)
 
     return [note_doc_to_public(n) for n in inserted_notes]
+
+
+# --- STEP 6: hierarchical roll-up (topic -> page -> chapter) ---
+
+@router.post("/{document_id}/summarize/hierarchy", response_model=dict[str, list[NotePublic]])
+async def summarize_hierarchy(document_id: str, current_user: UserPublic = Depends(get_current_user)):
+    if not summarizer_is_ready():
+        raise HTTPException(
+            status_code=503,
+            detail="Summarization model is still loading. Try again in a moment.",
+        )
+
+    doc = await _get_owned_document(document_id, current_user.id)
+    doc_id_str = str(doc["_id"])
+
+    paragraph_count = await db.notes.count_documents({"document_id": doc_id_str, "level": "paragraph"})
+    if paragraph_count == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="No paragraph-level notes found. Run POST /summarize first.",
+        )
+
+    await db.notes.delete_many({"document_id": doc_id_str, "level": {"$in": ["topic", "page", "chapter"]}})
+
+    # 1. topic level
+    topic_docs = await hierarchy_service.build_topic_notes(db, doc_id_str)
+    inserted_topic_notes = []
+    if topic_docs:
+        result = await db.notes.insert_many(topic_docs)
+        raw = await db.notes.find({"_id": {"$in": list(result.inserted_ids)}}).to_list(None)
+        topics_order = {
+            str(t["_id"]): t["order_index"]
+            for t in await db.topics.find({"document_id": doc_id_str}).to_list(None)
+        }
+        raw.sort(key=lambda n: topics_order.get(n.get("topic_id"), 0))
+        inserted_topic_notes = raw
+
+    # 2. page level
+    page_docs = await hierarchy_service.build_page_notes(db, doc_id_str)
+    inserted_page_notes = []
+    if page_docs:
+        result = await db.notes.insert_many(page_docs)
+        raw = await db.notes.find({"_id": {"$in": list(result.inserted_ids)}}).to_list(None)
+        raw.sort(key=lambda n: n["source_pages"][0])
+        inserted_page_notes = raw
+
+    # 3. chapter level
+    chapter_doc = await hierarchy_service.build_chapter_note(db, doc_id_str)
+    inserted_chapter_notes = []
+    if chapter_doc:
+        result = await db.notes.insert_one(chapter_doc)
+        inserted = await db.notes.find_one({"_id": result.inserted_id})
+        inserted_chapter_notes = [inserted]
+
+    return {
+        "topic": [note_doc_to_public(n) for n in inserted_topic_notes],
+        "page": [note_doc_to_public(n) for n in inserted_page_notes],
+        "chapter": [note_doc_to_public(n) for n in inserted_chapter_notes],
+    }
 
 
 @router.get("/{document_id}/notes", response_model=list[NotePublic])
 async def get_notes(
     document_id: str,
-    level: str = "paragraph",
+    level: Literal["paragraph", "topic", "page", "chapter"] = "paragraph",
     current_user: UserPublic = Depends(get_current_user),
 ):
     doc = await _get_owned_document(document_id, current_user.id)
     cursor = db.notes.find({"document_id": str(doc["_id"]), "level": level}).sort(
-        [("source_page", 1), ("paragraph_id", 1)]
+        [("source_pages", 1), ("paragraph_id", 1)]
     )
     notes = await cursor.to_list(length=None)
     return [note_doc_to_public(n) for n in notes]

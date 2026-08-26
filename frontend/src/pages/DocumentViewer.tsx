@@ -10,13 +10,22 @@ import {
   processDocument,
   getTopics,
   summarizeDocument,
+  summarizeHierarchy,
   getNotes,
   type DocumentDetail,
   type TopicPublic,
   type NotePublic,
+  type NoteLevel,
 } from "../api/documents";
 
 pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+
+const NOTE_LEVELS: { value: NoteLevel; label: string }[] = [
+  { value: "paragraph", label: "Paragraph" },
+  { value: "topic", label: "Topic" },
+  { value: "page", label: "Page" },
+  { value: "chapter", label: "Chapter" },
+];
 
 export default function DocumentViewer() {
   const { id } = useParams<{ id: string }>();
@@ -24,12 +33,15 @@ export default function DocumentViewer() {
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [topics, setTopics] = useState<TopicPublic[]>([]);
   const [notes, setNotes] = useState<NotePublic[]>([]);
+  const [noteLevel, setNoteLevel] = useState<NoteLevel>("paragraph");
   const [numPages, setNumPages] = useState(0);
 
   const [loading, setLoading] = useState(true);
+  const [notesLoading, setNotesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [summarizing, setSummarizing] = useState(false);
+  const [buildingHierarchy, setBuildingHierarchy] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,7 +64,7 @@ export default function DocumentViewer() {
         }
 
         try {
-          const notesList = await getNotes(id!);
+          const notesList = await getNotes(id!, noteLevel);
           if (!cancelled) setNotes(notesList);
         } catch {
           // No notes yet is expected before summarization has been run - not an error
@@ -75,6 +87,28 @@ export default function DocumentViewer() {
       cancelled = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!id || loading) return;
+    let cancelled = false;
+
+    async function loadNotesForLevel() {
+      setNotesLoading(true);
+      try {
+        const notesList = await getNotes(id!, noteLevel);
+        if (!cancelled) setNotes(notesList);
+      } catch {
+        if (!cancelled) setNotes([]);
+      } finally {
+        if (!cancelled) setNotesLoading(false);
+      }
+    }
+
+    loadNotesForLevel();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, noteLevel, loading]);
 
   async function handleProcess() {
     if (!id) return;
@@ -101,7 +135,9 @@ export default function DocumentViewer() {
     setNotesError(null);
     try {
       const generated = await summarizeDocument(id);
-      setNotes(generated);
+      if (noteLevel === "paragraph") {
+        setNotes(generated);
+      }
     } catch (err) {
       setNotesError(
         axios.isAxiosError(err)
@@ -110,6 +146,26 @@ export default function DocumentViewer() {
       );
     } finally {
       setSummarizing(false);
+    }
+  }
+
+  async function handleBuildHierarchy() {
+    if (!id) return;
+    setBuildingHierarchy(true);
+    setNotesError(null);
+    try {
+      const result = await summarizeHierarchy(id);
+      if (noteLevel === "topic") setNotes(result.topic);
+      else if (noteLevel === "page") setNotes(result.page);
+      else if (noteLevel === "chapter") setNotes(result.chapter);
+    } catch (err) {
+      setNotesError(
+        axios.isAxiosError(err)
+          ? err.response?.data?.detail ?? "Failed to build topic/page/chapter roll-up."
+          : "Failed to build topic/page/chapter roll-up."
+      );
+    } finally {
+      setBuildingHierarchy(false);
     }
   }
 
@@ -144,7 +200,7 @@ export default function DocumentViewer() {
             {doc.total_pages} pages &bull; status: {doc.status}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={handleProcess}
             disabled={processing}
@@ -159,17 +215,29 @@ export default function DocumentViewer() {
           >
             {summarizing ? "Generating notes..." : "Generate Notes"}
           </button>
+          <button
+            onClick={handleBuildHierarchy}
+            disabled={buildingHierarchy}
+            title="Rolls up existing paragraph notes into Topic, Page, and Chapter summaries"
+            className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {buildingHierarchy ? "Building roll-up..." : "Build Topic/Page/Chapter Roll-up"}
+          </button>
         </div>
       </header>
 
       {summarizing && (
         <div className="border-b bg-indigo-50 px-6 py-3 text-sm text-indigo-800">
           Running real T5 inference on every paragraph in this document. On CPU this can
-          legitimately take a minute or more for longer documents &ndash; this panel will update
-          automatically once it's done.
+          legitimately take a minute or more for longer documents.
         </div>
       )}
-
+      {buildingHierarchy && (
+        <div className="border-b bg-purple-50 px-6 py-3 text-sm text-purple-800">
+          Rolling up paragraph notes into topic, page, and chapter summaries &ndash; this
+          re-summarizes with T5 at each level and can take a little while too.
+        </div>
+      )}
       {notesError && (
         <div className="border-b bg-red-50 px-6 py-3 text-sm text-red-700">{notesError}</div>
       )}
@@ -217,13 +285,35 @@ export default function DocumentViewer() {
         </main>
 
         <aside className="space-y-3">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Notes {notes.length > 0 && `(${notes.length})`}
-          </h2>
-          {notes.length === 0 ? (
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+              Notes {notes.length > 0 && `(${notes.length})`}
+            </h2>
+          </div>
+
+          <div className="flex gap-1 rounded-md bg-slate-100 p-1">
+            {NOTE_LEVELS.map((l) => (
+              <button
+                key={l.value}
+                onClick={() => setNoteLevel(l.value)}
+                className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
+                  noteLevel === l.value
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+
+          {notesLoading ? (
+            <p className="text-sm text-slate-400">Loading {noteLevel} notes...</p>
+          ) : notes.length === 0 ? (
             <p className="text-sm text-slate-400">
-              No notes yet. Click "Generate Notes" above to run T5 summarization over every
-              paragraph in this document.
+              {noteLevel === "paragraph"
+                ? 'No notes yet. Click "Generate Notes" above.'
+                : `No ${noteLevel}-level notes yet. Generate paragraph notes first, then click "Build Topic/Page/Chapter Roll-up".`}
             </p>
           ) : (
             <ul className="space-y-3">
@@ -234,7 +324,13 @@ export default function DocumentViewer() {
                 >
                   <p className="text-sm text-slate-800">{n.text}</p>
                   <p className="mt-2 text-xs text-slate-400">
-                    Page {n.source_page} &bull; paragraph #{n.paragraph_id}
+                    {n.source_pages.length === 1
+                      ? `Page ${n.source_pages[0]}`
+                      : `Pages ${n.source_pages[0]}&ndash;${n.source_pages[n.source_pages.length - 1]}`}
+                    {n.paragraph_id !== null && ` &bull; paragraph #${n.paragraph_id}`}
+                    {" &bull; "}
+                    from {n.source_chunk_ids.length} paragraph
+                    {n.source_chunk_ids.length === 1 ? "" : "s"}
                   </p>
                 </li>
               ))}

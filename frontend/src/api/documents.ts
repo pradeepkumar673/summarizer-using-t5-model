@@ -42,18 +42,25 @@ export type TopicPublic = {
   page_range: [number, number];
 };
 
-export type NoteLevel = "paragraph";
+export type NoteLevel = "paragraph" | "topic" | "page" | "chapter";
 
 export type NotePublic = {
   id: string;
   document_id: string;
-  topic_id: string | null;
-  paragraph_id: number;
   level: NoteLevel;
   text: string;
-  source_page: number;
-  source_bounding_box: BoundingBox;
+  topic_id: string | null;
+  paragraph_id: number | null;
+  source_chunk_ids: string[];
+  source_pages: number[];
+  source_bounding_boxes: BoundingBox[];
   created_at: string;
+};
+
+export type HierarchyResult = {
+  topic: NotePublic[];
+  page: NotePublic[];
+  chapter: NotePublic[];
 };
 
 export async function uploadDocument(
@@ -100,6 +107,11 @@ export async function getTopics(id: string): Promise<TopicPublic[]> {
 
 export async function summarizeDocument(id: string): Promise<NotePublic[]> {
   const res = await api.post<NotePublic[]>(`/api/documents/${id}/summarize`);
+  return res.data;
+}
+
+export async function summarizeHierarchy(id: string): Promise<HierarchyResult> {
+  const res = await api.post<HierarchyResult>(`/api/documents/${id}/summarize/hierarchy`);
   return res.data;
 }
 

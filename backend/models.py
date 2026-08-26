@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Literal
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class UserCreate(BaseModel):
@@ -34,11 +35,7 @@ class TokenResponse(BaseModel):
 
 
 def user_doc_to_public(doc: dict) -> UserPublic:
-    return UserPublic(
-        id=str(doc["_id"]),
-        email=doc["email"],
-        created_at=doc["created_at"],
-    )
+    return UserPublic(id=str(doc["_id"]), email=doc["email"], created_at=doc["created_at"])
 
 
 # --- Document / chunk models ---
@@ -123,20 +120,21 @@ def topic_doc_to_public(doc: dict) -> TopicPublic:
     )
 
 
-# --- Note models (STEP 5: T5 paragraph-level summarization) ---
+# --- Note models ---
 
-NoteLevel = Literal["paragraph"]
+NoteLevel = Literal["paragraph", "topic", "page", "chapter"]
 
 
 class NotePublic(BaseModel):
     id: str
     document_id: str
-    topic_id: str | None = None
-    paragraph_id: int
     level: NoteLevel
     text: str
-    source_page: int
-    source_bounding_box: BoundingBox
+    topic_id: str | None = None  # set for paragraph/topic notes; None for page/chapter
+    paragraph_id: int | None = None  # only set for level="paragraph" (per-page chunk index)
+    source_chunk_ids: list[str]  # every source chunk _id this note traces back to
+    source_pages: list[int]  # sorted, de-duplicated page numbers this note covers
+    source_bounding_boxes: list[BoundingBox]  # bbox for each entry in source_chunk_ids
     created_at: datetime
 
 
@@ -144,11 +142,12 @@ def note_doc_to_public(doc: dict) -> NotePublic:
     return NotePublic(
         id=str(doc["_id"]),
         document_id=doc["document_id"],
-        topic_id=doc.get("topic_id"),
-        paragraph_id=doc["paragraph_id"],
         level=doc["level"],
         text=doc["text"],
-        source_page=doc["source_page"],
-        source_bounding_box=BoundingBox(**doc["source_bounding_box"]),
+        topic_id=doc.get("topic_id"),
+        paragraph_id=doc.get("paragraph_id"),
+        source_chunk_ids=doc["source_chunk_ids"],
+        source_pages=doc["source_pages"],
+        source_bounding_boxes=[BoundingBox(**bb) for bb in doc["source_bounding_boxes"]],
         created_at=doc["created_at"],
     )
