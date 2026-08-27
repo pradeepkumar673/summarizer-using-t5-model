@@ -1,10 +1,14 @@
-# Force Redis client to use RESP2 protocol globally for compatibility with Windows Redis 5.x server
-import redis.connection
-redis.connection.DEFAULT_RESP_VERSION = 2
+# Force Redis client to use RESP2 protocol globally (redis-py 5.x compatibility)
+import redis.connection as _redis_conn
+_redis_conn.DEFAULT_RESP_VERSION = 2
 
-# Disable maintenance notifications globally since they require RESP3 and hiredis
-original_maint_init = redis.connection.MaintNotificationsConfig.__init__
-redis.connection.MaintNotificationsConfig.__init__ = lambda self, *args, **kwargs: original_maint_init(self, enabled=False)
+# redis 8.x introduced MaintNotificationsConfig (requires RESP3 + hiredis).
+# Guard with hasattr so this is silently skipped on redis 5.x.
+if hasattr(_redis_conn, "MaintNotificationsConfig"):
+    _orig_maint_init = _redis_conn.MaintNotificationsConfig.__init__
+    _redis_conn.MaintNotificationsConfig.__init__ = (
+        lambda self, *args, **kwargs: _orig_maint_init(self, enabled=False)
+    )
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

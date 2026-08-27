@@ -1,10 +1,22 @@
-# Force Redis client to use RESP2 protocol globally for compatibility with Windows Redis 5.x server
-import redis.connection
-redis.connection.DEFAULT_RESP_VERSION = 2
+# ──────────────────────────────────────────────────────────────────────────────
+# RESP2 compatibility patch for redis-py 5.x + celery/kombu
+#
+# redis-py 5+ defaults to RESP3 protocol which breaks kombu's zset score-pair
+# parsing (ValueError: too many values to unpack).  Force RESP2 globally
+# before any other import touches the redis module.
+# ──────────────────────────────────────────────────────────────────────────────
+import redis.connection as _redis_conn
 
-# Disable maintenance notifications globally since they require RESP3 and hiredis
-original_maint_init = redis.connection.MaintNotificationsConfig.__init__
-redis.connection.MaintNotificationsConfig.__init__ = lambda self, *args, **kwargs: original_maint_init(self, enabled=False)
+# Force RESP2 for all connections (redis-py 5.x)
+_redis_conn.DEFAULT_RESP_VERSION = 2
+
+# redis 8.x introduced MaintNotificationsConfig (requires RESP3 + hiredis).
+# Patch it away only if it actually exists in this redis version.
+if hasattr(_redis_conn, "MaintNotificationsConfig"):
+    _orig_maint_init = _redis_conn.MaintNotificationsConfig.__init__
+    _redis_conn.MaintNotificationsConfig.__init__ = (
+        lambda self, *args, **kwargs: _orig_maint_init(self, enabled=False)
+    )
 
 import torch
 # Limit PyTorch CPU threads to prevent 100% CPU system lockup
@@ -27,6 +39,7 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
+    # Instruct kombu to negotiate RESP2 with the Redis server
     broker_transport_options={"protocol": 2},
     result_backend_transport_options={"protocol": 2},
     task_acks_late=True,
@@ -44,4 +57,3 @@ from embedding_service import load_model as load_embedder
 def load_models_in_worker(**kwargs):
     load_summarizer()
     load_embedder()
-
