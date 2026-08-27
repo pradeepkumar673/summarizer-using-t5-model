@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { updateNote, type ChunkPublic, type NoteLevel, type NotePublic } from "../api/documents";
+import { deleteNote, clearNotes, updateNote, type ChunkPublic, type NoteLevel, type NotePublic } from "../api/documents";
 import { logActivity } from "../api/activity";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { buildChunkIndex, resolveNoteHighlights } from "../lib/highlights";
@@ -21,6 +21,8 @@ interface NotesPaneProps {
   noteLevel: NoteLevel;
   onNoteLevelChange: (level: NoteLevel) => void;
   onNoteUpdated: (updated: NotePublic) => void;
+  onNoteDeleted?: (noteId: string) => void;
+  onNotesCleared?: () => void;
 }
 
 export default function NotesPane({
@@ -31,6 +33,8 @@ export default function NotesPane({
   noteLevel,
   onNoteLevelChange,
   onNoteUpdated,
+  onNoteDeleted,
+  onNotesCleared,
 }: NotesPaneProps) {
   const noteRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const activeNoteId = useWorkspaceStore((s) => s.activeNoteId);
@@ -40,7 +44,10 @@ export default function NotesPane({
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [draftText, setDraftText] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clearing, setClearing] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
 
   const chunkIndex = useMemo(() => buildChunkIndex(chunks), [chunks]);
 
@@ -106,6 +113,33 @@ export default function NotesPane({
     }
   }
 
+  async function handleDeleteNote(e: React.MouseEvent, note: NotePublic) {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this note?")) return;
+    setDeletingId(note.id);
+    try {
+      await deleteNote(note.id);
+      onNoteDeleted?.(note.id);
+    } catch {
+      setSaveError("Failed to delete note.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleClearAll() {
+    if (!window.confirm(`Delete all ${noteLevel}-level notes?`)) return;
+    setClearing(true);
+    try {
+      await clearNotes(documentId, noteLevel);
+      onNotesCleared?.();
+    } catch {
+      setSaveError("Failed to clear notes.");
+    } finally {
+      setClearing(false);
+    }
+  }
+
   return (
     <div className="flex h-full flex-col bg-surface-container-low border-l-2 border-on-surface">
 
@@ -114,13 +148,26 @@ export default function NotesPane({
         <h2 className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">
           Notes {notes.length > 0 && `(${notes.length})`}
         </h2>
-        <Link
-          to={`/documents/${documentId}/notebook`}
-          className="font-label-caps text-label-caps text-primary hover:underline underline-offset-2"
-          style={{ fontSize: "10px" }}
-        >
-          My Notebook →
-        </Link>
+        <div className="flex items-center gap-3">
+          {notes.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              disabled={clearing}
+              title={`Delete all ${noteLevel} notes`}
+              className="font-label-caps text-label-caps text-error hover:underline transition-colors"
+              style={{ fontSize: "10px" }}
+            >
+              {clearing ? "Deleting..." : "Clear Level"}
+            </button>
+          )}
+          <Link
+            to={`/documents/${documentId}/notebook`}
+            className="font-label-caps text-label-caps text-primary hover:underline underline-offset-2"
+            style={{ fontSize: "10px" }}
+          >
+            My Notebook →
+          </Link>
+        </div>
       </div>
 
       {/* Level tabs — bookmark ribbon style */}
@@ -231,6 +278,15 @@ export default function NotesPane({
                         style={{ fontSize: "9px" }}
                       >
                         {n.is_pinned ? "★ Pinned" : "☆ Pin"}
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteNote(e, n)}
+                        disabled={deletingId === n.id}
+                        title="Delete note"
+                        className="hand-drawn-border-thin bg-white text-error px-2 py-0.5 font-label-caps text-label-caps hover:bg-error-container transition-colors"
+                        style={{ fontSize: "9px" }}
+                      >
+                        {deletingId === n.id ? "..." : "Delete"}
                       </button>
                     </div>
                   </div>

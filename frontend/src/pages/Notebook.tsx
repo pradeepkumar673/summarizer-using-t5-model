@@ -5,6 +5,7 @@ import {
   getDocument,
   getNotebook,
   updateNote,
+  deleteNote,
   getExportMarkdownUrl,
   getExportPdfUrl,
   type DocumentDetail,
@@ -60,6 +61,8 @@ export default function Notebook() {
     return () => { cancelled = true; };
   }, [id]);
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   async function handleUnpin(note: NotePublic) {
     if (!id) return;
     setUnpinningId(note.id);
@@ -76,6 +79,20 @@ export default function Notebook() {
       setUnpinningId(null);
     }
   }
+
+  async function handleDelete(note: NotePublic) {
+    if (!window.confirm("Are you sure you want to permanently delete this note?")) return;
+    setDeletingId(note.id);
+    try {
+      await deleteNote(note.id);
+      setNotes((prev) => prev.filter((n) => n.id !== note.id));
+    } catch {
+      setError("Failed to delete note.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
 
   async function handleExport(format: "md" | "pdf") {
     if (!id) return;
@@ -201,14 +218,24 @@ export default function Notebook() {
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleUnpin(n)}
-                    disabled={unpinningId === n.id}
-                    className="font-label-caps text-label-caps text-secondary hover:underline disabled:opacity-50 transition-colors"
-                    style={{ fontSize: "10px" }}
-                  >
-                    {n.is_pinned ? "☆ Unpin" : "Remove"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleUnpin(n)}
+                      disabled={unpinningId === n.id}
+                      className="font-label-caps text-label-caps text-secondary hover:underline disabled:opacity-50 transition-colors"
+                      style={{ fontSize: "10px" }}
+                    >
+                      {n.is_pinned ? "☆ Unpin" : "Remove"}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(n)}
+                      disabled={deletingId === n.id}
+                      className="font-label-caps text-label-caps text-error hover:underline disabled:opacity-50 transition-colors"
+                      style={{ fontSize: "10px" }}
+                    >
+                      {deletingId === n.id ? "Deleting..." : "Delete"}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Note text */}

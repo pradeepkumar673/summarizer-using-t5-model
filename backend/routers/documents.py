@@ -399,3 +399,20 @@ async def get_notebook(document_id: str, current_user: UserPublic = Depends(get_
     ).sort([("level", 1), ("source_pages", 1)])
     notes = await cursor.to_list(length=None)
     return [note_doc_to_public(n) for n in notes]
+
+
+@router.delete("/{document_id}/notes")
+async def clear_notes(
+    document_id: str,
+    level: Literal["paragraph", "topic", "page", "chapter", "all"] = "all",
+    current_user: UserPublic = Depends(get_current_user),
+):
+    doc = await _get_owned_document(document_id, current_user.id)
+    doc_id_str = str(doc["_id"])
+    query: dict = {"document_id": doc_id_str}
+    if level != "all":
+        query["level"] = level
+
+    result = await db.notes.delete_many(query)
+    return {"message": "Notes deleted successfully", "deleted_count": result.deleted_count}
+

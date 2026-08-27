@@ -192,6 +192,22 @@ export async function updateNote(
   return res.data;
 }
 
+export async function deleteNote(noteId: string): Promise<void> {
+  await api.delete(`/api/notes/${noteId}`);
+}
+
+export async function clearNotes(
+  documentId: string,
+  level: NoteLevel | "all" = "all"
+): Promise<{ deleted_count: number }> {
+  const res = await api.delete<{ deleted_count: number }>(
+    `/api/documents/${documentId}/notes`,
+    { params: { level } }
+  );
+  return res.data;
+}
+
+
 export async function searchKeyword(id: string, q: string): Promise<SearchResult[]> {
   const res = await api.get<SearchResult[]>(`/api/documents/${id}/search`, {
     params: { q },

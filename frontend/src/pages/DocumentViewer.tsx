@@ -189,6 +189,17 @@ export default function DocumentViewer() {
     if (updated.level === "paragraph") setParagraphNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
   }
 
+  function handleNoteDeleted(noteId: string) {
+    setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    setParagraphNotes((prev) => prev.filter((n) => n.id !== noteId));
+  }
+
+  function handleNotesCleared() {
+    setNotes([]);
+    setParagraphNotes([]);
+  }
+
+
   // ── Loading state ────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -446,6 +457,8 @@ export default function DocumentViewer() {
                   noteLevel={noteLevel}
                   onNoteLevelChange={setNoteLevel}
                   onNoteUpdated={handleNoteUpdated}
+                  onNoteDeleted={handleNoteDeleted}
+                  onNotesCleared={handleNotesCleared}
                 />
               </Panel>
             </PanelGroup>

@@ -42,3 +42,14 @@ async def update_note(
     await db.notes.update_one({"_id": note["_id"]}, {"$set": update_data})
     updated = await db.notes.find_one({"_id": note["_id"]})
     return note_doc_to_public(updated)
+
+
+@router.delete("/{note_id}")
+async def delete_note(
+    note_id: str,
+    current_user: UserPublic = Depends(get_current_user),
+):
+    note = await _get_owned_note(note_id, current_user.id)
+    await db.notes.delete_one({"_id": note["_id"]})
+    return {"message": "Note deleted successfully", "id": note_id}
+
