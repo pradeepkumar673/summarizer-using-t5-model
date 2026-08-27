@@ -60,6 +60,24 @@ if HAS_CHROMADB:
         )
 
 
+def delete_document_collection(document_id: str):
+    if HAS_CHROMADB:
+        try:
+            client = get_client()
+            name = f"doc_{document_id}"
+            client.delete_collection(name)
+        except Exception:
+            pass
+
+    file_path = os.path.join(CHROMA_PERSIST_DIR, f"doc_{document_id}.json")
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception:
+            pass
+
+
+
 def index_chunks(document_id: str, chunks: list[dict], embeddings: list[list[float]]) -> None:
     """
     chunks: dicts with at least _id, page_number, paragraph_id, text.

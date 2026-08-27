@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, type ChangeEvent, type DragEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { fetchMe, type UserPublic } from "../api/auth";
-import { listDocuments, uploadDocument, type DocumentPublic } from "../api/documents";
+import { listDocuments, uploadDocument, deleteDocument, type DocumentPublic } from "../api/documents";
 import axios from "axios";
 import SketchHeader from "../components/sketch/SketchHeader";
 import SketchButton from "../components/sketch/SketchButton";
@@ -22,11 +22,28 @@ export default function Dashboard() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  async function handleDeleteDocument(e: React.MouseEvent, docId: string, title: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete "${title}"? This will remove all associated notes and data.`)) return;
+    setDeletingId(docId);
+    try {
+      await deleteDocument(docId);
+      setDocuments((prev) => (prev ? prev.filter((d) => d.id !== docId) : null));
+    } catch {
+      alert("Failed to delete document.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
 
   useEffect(() => {
     fetchMe()
@@ -277,6 +294,14 @@ export default function Dashboard() {
                         >
                           Open
                         </Link>
+                        <button
+                          onClick={(e) => handleDeleteDocument(e, doc.id, doc.title)}
+                          disabled={deletingId === doc.id}
+                          title="Delete document"
+                          className="hand-drawn-border-thin bg-white text-error px-3 py-1.5 font-label-caps text-label-caps hover:bg-error-container transition-colors whitespace-nowrap disabled:opacity-50"
+                        >
+                          {deletingId === doc.id ? "Deleting..." : "Delete"}
+                        </button>
                       </div>
                     </li>
                   ))}

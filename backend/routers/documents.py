@@ -32,7 +32,7 @@ from preprocessing import clean_chunks, split_into_sentences
 from summarization_service import is_ready as summarizer_is_ready
 from summarization_service import summarize_text
 from topic_segmentation import segment_topics
-from vector_store import index_chunks
+from vector_store import index_chunks, delete_document_collection
 from tasks import process_document_pipeline
 
 logger = logging.getLogger(__name__)
@@ -132,6 +132,35 @@ async def get_document(document_id: str, current_user: UserPublic = Depends(get_
 
     public = document_doc_to_public(doc)
     return DocumentDetail(**public.model_dump(), chunks=[chunk_doc_to_public(c) for c in chunk_docs])
+
+
+@router.delete("/{document_id}")
+async def delete_document(
+    document_id: str,
+    current_user: UserPublic = Depends(get_current_user),
+):
+    doc = await _get_owned_document(document_id, current_user.id)
+    doc_id_str = str(doc["_id"])
+
+    file_path = doc.get("file_path")
+    if file_path and os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            logger.warning(f"Could not remove PDF file {file_path}: {e}")
+
+    delete_document_collection(doc_id_str)
+
+    await db.chunks.delete_many({"document_id": doc_id_str})
+    await db.topics.delete_many({"document_id": doc_id_str})
+    await db.notes.delete_many({"document_id": doc_id_str})
+    await db.exam_essentials.delete_many({"document_id": doc_id_str})
+    await db.knowledge_graphs.delete_many({"document_id": doc_id_str})
+    await db.activity_logs.delete_many({"document_id": doc_id_str})
+    await db.documents.delete_one({"_id": doc["_id"]})
+
+    return {"message": "Document deleted successfully", "id": document_id}
+
 
 
 @router.get("/{document_id}/file")

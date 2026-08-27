@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { listDocuments, type DocumentPublic } from "../api/documents";
+import { listDocuments, deleteDocument, type DocumentPublic } from "../api/documents";
 import SketchHeader from "../components/sketch/SketchHeader";
 
 const STATUS_CHIP: Record<string, string> = {
@@ -15,6 +15,7 @@ const STATUS_CHIP: Record<string, string> = {
 
 export default function Documents() {
   const [documents, setDocuments] = useState<DocumentPublic[] | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,6 +23,21 @@ export default function Documents() {
       .then(setDocuments)
       .catch(() => setError("Failed to load documents."));
   }, []);
+
+  async function handleDeleteDocument(e: React.MouseEvent, docId: string, title: string) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete "${title}"? This will remove all associated notes and data.`)) return;
+    setDeletingId(docId);
+    try {
+      await deleteDocument(docId);
+      setDocuments((prev) => (prev ? prev.filter((d) => d.id !== docId) : null));
+    } catch {
+      alert("Failed to delete document.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-checkered text-on-surface font-body">
@@ -58,30 +74,46 @@ export default function Documents() {
             {documents.map((doc, i) => (
               <li
                 key={doc.id}
-                className="bg-white hand-drawn-border-thin shadow-sketch-sm"
+                className="bg-white hand-drawn-border-thin shadow-sketch-sm p-4 flex items-center justify-between gap-4 flex-wrap"
                 style={{ transform: `rotate(${i % 2 === 0 ? "0.2" : "-0.2"}deg)` }}
               >
-                <Link
-                  to={`/documents/${doc.id}`}
-                  className="flex justify-between items-center p-4 group"
-                >
-                  <div className="min-w-0">
-                    <p className="font-headline text-headline-sm truncate group-hover:text-primary transition-colors" style={{ fontSize: "16px" }}>
-                      {doc.title}
-                    </p>
-                    <p className="font-mono text-source-code text-on-surface-variant">
-                      {doc.total_pages} page{doc.total_pages !== 1 ? "s" : ""}
-                    </p>
-                  </div>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    to={`/documents/${doc.id}`}
+                    className="font-headline text-headline-sm truncate hover:text-primary transition-colors block"
+                    style={{ fontSize: "16px" }}
+                  >
+                    {doc.title}
+                  </Link>
+                  <p className="font-mono text-source-code text-on-surface-variant mt-0.5">
+                    {doc.total_pages} page{doc.total_pages !== 1 ? "s" : ""} · {new Date(doc.upload_date).toLocaleDateString()}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0">
                   <span
-                    className={`font-label-caps text-label-caps uppercase px-2.5 py-1 ml-4 shrink-0 ${
+                    className={`font-label-caps text-label-caps uppercase px-2.5 py-1 ${
                       STATUS_CHIP[doc.status] ?? "bg-surface-variant text-on-surface-variant border-2 border-on-surface"
                     }`}
                     style={{ borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px" }}
                   >
                     {doc.status}
                   </span>
-                </Link>
+                  <Link
+                    to={`/documents/${doc.id}`}
+                    className="hand-drawn-border-thin bg-white px-3 py-1.5 font-label-caps text-label-caps hover:bg-primary/10 transition-colors whitespace-nowrap"
+                  >
+                    Open
+                  </Link>
+                  <button
+                    onClick={(e) => handleDeleteDocument(e, doc.id, doc.title)}
+                    disabled={deletingId === doc.id}
+                    title="Delete document"
+                    className="hand-drawn-border-thin bg-white text-error px-3 py-1.5 font-label-caps text-label-caps hover:bg-error-container transition-colors whitespace-nowrap disabled:opacity-50"
+                  >
+                    {deletingId === doc.id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -90,3 +122,4 @@ export default function Documents() {
     </div>
   );
 }
+

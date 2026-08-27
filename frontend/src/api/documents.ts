@@ -266,4 +266,9 @@ export async function retryDocumentPipeline(id: string): Promise<{ status: strin
   return res.data;
 }
 
+export async function deleteDocument(id: string): Promise<void> {
+  await api.delete(`/api/documents/${id}`);
+}
+
+
 
