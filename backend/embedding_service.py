@@ -17,12 +17,15 @@ MODEL_NAME = "all-MiniLM-L6-v2"
 _model: SentenceTransformer | None = None
 
 
+from device_utils import get_device
+
+
 def load_model() -> None:
     """Loads the embedding model once per process. Safe to call multiple times."""
     global _model
     if _model is not None:
         return
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = str(get_device())
     print(f"[embedding_service] Loading '{MODEL_NAME}' on device={device}...")
     _model = SentenceTransformer(MODEL_NAME, device=device)
     print(f"[embedding_service] Embedding model loaded and ready on {device}.")

@@ -65,10 +65,26 @@ export default function DocumentViewer() {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-
+  const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null);
 
   const setActiveDocument = useWorkspaceStore((s) => s.setActiveDocument);
   const requestedNoteLevel = useWorkspaceStore((s) => s.requestedNoteLevel);
+  const focusSearchResult = useWorkspaceStore((s) => s.focusSearchResult);
+
+  const handleTopicClick = (t: TopicPublic) => {
+    setSelectedTopicId(t.id);
+    const startPage = t.page_range ? t.page_range[0] : 1;
+    const matchingTopicNote = notes.find((n) => n.level === "topic" && n.topic_id === t.id);
+    const matchingParaNote = notes.find((n) => n.topic_id === t.id);
+    const targetNote = matchingTopicNote || matchingParaNote;
+
+    focusSearchResult({
+      page: startPage,
+      box: null,
+      noteId: targetNote?.id ?? null,
+      noteLevel: targetNote?.level ?? null,
+    });
+  };
 
   const loadDocument = useCallback(async () => {
     if (!id) return;
@@ -389,18 +405,28 @@ export default function DocumentViewer() {
               </p>
             ) : (
               <ul className="space-y-1">
-                {topics.map((t) => (
-                  <li
-                    key={t.id}
-                    className="hand-drawn-border-thin bg-white px-2 py-1.5 text-sm cursor-pointer hover:bg-surface-container transition-colors"
-                  >
-                    <span className="font-headline block truncate" style={{ fontSize: "13px" }}>{t.title}</span>
-                    <span className="font-mono text-source-code text-on-surface-variant block">
-                      p.{t.page_range[0]}–{t.page_range[1]}
-                    </span>
-                  </li>
-                ))}
+                {topics.map((t) => {
+                  const isSelected = selectedTopicId === t.id;
+                  return (
+                    <li
+                      key={t.id}
+                      onClick={() => handleTopicClick(t)}
+                      title={`Jump to page ${t.page_range[0]}`}
+                      className={`hand-drawn-border-thin px-2 py-1.5 text-sm cursor-pointer transition-all ${
+                        isSelected
+                          ? "bg-secondary-fixed text-on-surface shadow-md font-bold ring-2 ring-primary scale-[1.02]"
+                          : "bg-white hover:bg-surface-container text-on-surface"
+                      }`}
+                    >
+                      <span className="font-headline block truncate" style={{ fontSize: "13px" }}>{t.title}</span>
+                      <span className="font-mono text-source-code text-on-surface-variant block">
+                        p.{t.page_range[0]}–{t.page_range[1]}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
+
             )}
 
             {/* Navigation links */}

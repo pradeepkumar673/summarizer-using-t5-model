@@ -115,9 +115,10 @@ async def _run_pipeline(document_id: str, self):
             valid_chunks.append(chunk)
             texts_to_summarize.append(text)
 
-        # Batch process the texts with optimal CPU batch size of 16
+        # Batch process the texts (batch size 32 for CUDA GPU, 16 for CPU)
         summaries = []
-        batch_size = 16
+        from device_utils import is_cuda_functional
+        batch_size = 32 if is_cuda_functional() else 16
         for i in range(0, len(texts_to_summarize), batch_size):
             batch = texts_to_summarize[i : i + batch_size]
             batch_summaries = summarize_text_batch(batch, max_length=45, min_length=8)

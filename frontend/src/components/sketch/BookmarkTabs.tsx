@@ -42,7 +42,7 @@ const TABS: TabDef[] = [
   {
     key: "exam",
     icon: "assignment_turned_in",
-    label: "Exam",
+    label: "Exam Essentials",
     color: "bg-tertiary-fixed text-on-tertiary-fixed",
     activeColor: "bg-tertiary-container text-on-tertiary-container",
     path: "/exam-essentials",
@@ -50,7 +50,7 @@ const TABS: TabDef[] = [
   {
     key: "graph",
     icon: "hub",
-    label: "Graph",
+    label: "Knowledge Graph",
     color: "bg-primary-fixed-dim text-on-primary-fixed",
     activeColor: "bg-primary-container text-on-primary-container",
     path: "/graph",
@@ -58,7 +58,7 @@ const TABS: TabDef[] = [
   {
     key: "viva",
     icon: "record_voice_over",
-    label: "Viva",
+    label: "Viva Simulator",
     color: "bg-error-container text-on-error-container",
     activeColor: "bg-error text-on-error",
     path: "/viva",
@@ -66,12 +66,13 @@ const TABS: TabDef[] = [
   {
     key: "search",
     icon: "search",
-    label: "Search",
+    label: "Ask AI Search",
     color: "bg-surface-variant text-on-surface-variant",
     activeColor: "bg-inverse-surface text-inverse-on-surface",
     isAction: true,
   },
 ];
+
 
 const ROTATIONS = [1, -1, 2, -2, 1, -1];
 
@@ -86,7 +87,7 @@ export default function BookmarkTabs({
   const basePath = `/documents/${documentId}`;
 
   return (
-    <nav className="fixed right-0 top-24 w-16 md:w-20 flex flex-col gap-3 z-40 items-end">
+    <nav className="fixed right-0 top-24 flex flex-col gap-3 z-40 items-end pr-0 pointer-events-auto">
       {TABS.map((tab, i) => {
         const isActive =
           tab.path !== undefined
@@ -99,18 +100,22 @@ export default function BookmarkTabs({
         const content = (
           <div
             className={`
-              ${colorClass}
-              py-3 px-2 -mr-1 rounded-l-full
+              group flex items-center gap-2
+              py-2.5 px-3 -mr-1 rounded-l-full
               border-2 border-on-surface
-              flex items-center gap-1
-              transition-all duration-200
-              ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:translate-x-[-8px]"}
-              ${isActive ? "translate-x-0 shadow-sketch-sm" : "translate-x-3"}
+              transition-all duration-300 ease-out
+              ${colorClass}
+              ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:-translate-x-2 hover:shadow-sketch"}
+              ${isActive ? "shadow-sketch-sm ring-2 ring-on-surface" : "opacity-90 hover:opacity-100"}
             `}
-            style={{ transform: `rotate(${rotation}deg) translateX(${isActive ? "0" : "12px"})` }}
-            title={tab.label}
+            style={{
+              transform: `rotate(${rotation}deg)`,
+            }}
           >
-            <span className="material-symbols-outlined text-xl">{tab.icon}</span>
+            <span className="material-symbols-outlined text-xl shrink-0">{tab.icon}</span>
+            <span className="font-headline text-xs font-bold whitespace-nowrap max-w-0 opacity-0 group-hover:max-w-[160px] group-hover:opacity-100 group-hover:pr-1 transition-all duration-300 ease-out overflow-hidden">
+              {tab.label}
+            </span>
           </div>
         );
 
@@ -120,7 +125,7 @@ export default function BookmarkTabs({
               key={tab.key}
               onClick={tab.key === "search" ? onSearchClick : onHeatmapClick}
               disabled={disabled}
-              className="appearance-none border-0 bg-transparent p-0"
+              className="appearance-none border-0 bg-transparent p-0 outline-none"
             >
               {content}
             </button>
@@ -132,7 +137,7 @@ export default function BookmarkTabs({
         }
 
         return (
-          <Link key={tab.key} to={`${basePath}${tab.path}`}>
+          <Link key={tab.key} to={`${basePath}${tab.path}`} className="outline-none">
             {content}
           </Link>
         );
@@ -140,3 +145,4 @@ export default function BookmarkTabs({
     </nav>
   );
 }
+

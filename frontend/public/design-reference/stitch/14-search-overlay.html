@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>pradeepLLM - Search Overlay</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&amp;family=JetBrains+Mono:wght@400;700&amp;family=Karla:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#386800",
+                        "on-tertiary-fixed": "#0e2000",
+                        "outline-variant": "#c1c7d3",
+                        "primary": "#005da7",
+                        "on-surface-variant": "#414751",
+                        "inverse-primary": "#a4c9ff",
+                        "tertiary-container": "#498300",
+                        "outline": "#717783",
+                        "secondary-fixed": "#ffddb4",
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "surface": "#fcf9f8",
+                        "on-error": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#0060ac",
+                        "on-background": "#1c1b1b",
+                        "surface-container-high": "#eae7e7",
+                        "surface-variant": "#e5e2e1",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#f6f3f2",
+                        "on-surface": "#1c1b1b",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-tertiary-container": "#f9ffeb",
+                        "primary-fixed": "#d4e3ff",
+                        "secondary": "#835500",
+                        "tertiary-fixed": "#a1fa49",
+                        "error-container": "#ffdad6",
+                        "primary-container": "#2976c7",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#001c39",
+                        "tertiary-fixed-dim": "#87dc2c",
+                        "secondary-fixed-dim": "#ffb955",
+                        "surface-container": "#f0eded",
+                        "on-secondary-fixed": "#291800",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-tertiary-fixed-variant": "#2a5000",
+                        "on-primary-container": "#fdfcff",
+                        "secondary-container": "#feae2c",
+                        "inverse-on-surface": "#f3f0ef",
+                        "background": "#fcf9f8",
+                        "on-primary-fixed-variant": "#004883",
+                        "on-secondary-container": "#6b4500",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "inverse-surface": "#313030",
+                        "surface-dim": "#dcd9d9",
+                        "surface-bright": "#fcf9f8",
+                        "error": "#ba1a1a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "margin-mobile": "16px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "xl": "40px",
+                        "unit": "4px",
+                        "md": "16px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["JetBrains Mono"],
+                        "body-md": ["Karla"],
+                        "display-lg": ["Bricolage Grotesque"],
+                        "headline-sm": ["Bricolage Grotesque"],
+                        "headline-md": ["Bricolage Grotesque"],
+                        "source-code": ["JetBrains Mono"],
+                        "body-lg": ["Karla"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "1.0", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "source-code": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Wobbly Sketchbook Borders */
+        .sketch-border {
+            border: 2px solid theme('colors.on-background');
+            border-radius: 4px 12px 6px 14px / 12px 4px 14px 6px;
+        }
+        .sketch-border-thick {
+            border: 3px solid theme('colors.on-background');
+            border-radius: 8px 3px 10px 4px / 4px 10px 3px 8px;
+        }
+        
+        /* Torn Edge Effect - Bottom */
+        .torn-bottom {
+            position: relative;
+        }
+        .torn-bottom::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: -2px;
+            right: -2px;
+            height: 8px;
+            background: theme('colors.surface-container-lowest');
+            border-top: 2px solid theme('colors.on-background');
+            clip-path: polygon(0% 0%, 5% 100%, 10% 0%, 15% 100%, 20% 0%, 25% 100%, 30% 0%, 35% 100%, 40% 0%, 45% 100%, 50% 0%, 55% 100%, 60% 0%, 65% 100%, 70% 0%, 75% 100%, 80% 0%, 85% 100%, 90% 0%, 95% 100%, 100% 0%);
+        }
+
+        /* Marker Highlights */
+        .marker-highlight-blue {
+            background: linear-gradient(104deg, transparent 0%, rgba(41, 118, 199, 0.2) 2%, rgba(41, 118, 199, 0.4) 92%, transparent 100%);
+            padding: 0 4px;
+            border-radius: 2px;
+        }
+        .marker-highlight-yellow {
+            background: linear-gradient(104deg, transparent 0%, rgba(254, 174, 44, 0.4) 2%, rgba(254, 174, 44, 0.6) 92%, transparent 100%);
+            padding: 0 4px;
+            border-radius: 2px;
+        }
+        
+        /* Subtle Paper Texture Overlay */
+        .paper-texture {
+            background-color: theme('colors.background');
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+
+        /* Hand-drawn Input Line */
+        .ruled-input {
+            border: none;
+            border-bottom: 2px solid theme('colors.on-background');
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+            outline: none;
+        }
+        .ruled-input:focus {
+            outline: none;
+            border-bottom: 3px solid theme('colors.primary');
+            box-shadow: none;
+        }
+
+        /* Corner Flourish */
+        .corner-flourish::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 8px;
+            height: 8px;
+            border-top: 2px solid theme('colors.on-background');
+            border-left: 2px solid theme('colors.on-background');
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+            border-left: 2px solid theme('colors.on-background');
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.outline');
+            border: 2px solid theme('colors.on-background');
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen overflow-hidden paper-texture">
+<!-- Top Navigation Anchor (Web) -->
+<header class="hidden md:flex justify-between items-center px-margin-desktop py-md w-full border-b-2 border-on-background shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-background z-50 absolute top-0 left-0">
+<div class="font-headline-md text-headline-md text-primary border-2 border-on-background rotate-[-1deg] px-2 sketch-border bg-surface-container-lowest">
+            pradeepLLM
+        </div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary text-3xl cursor-pointer hover:bg-secondary-container/20 transition-transform hover:scale-105 p-1 rounded-full sketch-border" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</div>
+</header>
+<!-- Side Navigation Anchor (Web) -->
+<nav class="hidden md:flex flex-col items-end pt-24 space-y-4 z-40 fixed right-0 top-0 h-full w-[100px] border-l-2 border-on-background bg-background shadow-[-4px_0px_0px_0px_rgba(0,0,0,0.05)]">
+<div class="text-on-surface-variant border-l-2 border-on-background py-4 flex flex-col items-center w-full hover:translate-x-[-8px] transition-transform duration-200 cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary">sticky_note_2</span>
+<span class="font-label-caps text-label-caps">Notes</span>
+</div>
+<div class="text-on-surface-variant border-l-2 border-on-background py-4 flex flex-col items-center w-full hover:translate-x-[-8px] transition-transform duration-200 cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary">local_fire_department</span>
+<span class="font-label-caps text-label-caps">Heatmap</span>
+</div>
+<div class="text-on-surface-variant border-l-2 border-on-background py-4 flex flex-col items-center w-full hover:translate-x-[-8px] transition-transform duration-200 cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary">assignment_turned_in</span>
+<span class="font-label-caps text-label-caps text-center px-1">Exam Essentials</span>
+</div>
+<div class="text-on-surface-variant border-l-2 border-on-background py-4 flex flex-col items-center w-full hover:translate-x-[-8px] transition-transform duration-200 cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary">account_tree</span>
+<span class="font-label-caps text-label-caps text-center px-1">Knowledge Graph</span>
+</div>
+<div class="text-on-surface-variant border-l-2 border-on-background py-4 flex flex-col items-center w-full hover:translate-x-[-8px] transition-transform duration-200 cursor-pointer group">
+<span class="material-symbols-outlined mb-1 group-hover:text-primary">record_voice_over</span>
+<span class="font-label-caps text-label-caps">Viva</span>
+</div>
+<!-- ACTIVE NAV TAB -->
+<div class="bg-secondary-container text-on-secondary-container border-2 border-on-background -translate-x-4 rotate-2 rounded-l-full px-4 py-3 flex flex-col items-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] w-full skew-y-3 relative">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="font-label-caps text-label-caps">Search</span>
+<!-- Tape effect holding it -->
+<div class="absolute -top-2 -right-2 w-6 h-3 bg-surface/80 rotate-[-15deg] border border-on-background/20 mix-blend-multiply"></div>
+</div>
+</nav>
+<!-- Main Content Canvas (Background Simulation) -->
+<main class="w-full h-screen pt-24 md:pr-[120px] px-gutter relative flex">
+<!-- Background PDF Mockup -->
+<div class="w-full h-full bg-surface-container-lowest sketch-border p-8 opacity-40 blur-[1px] transform -rotate-1 relative">
+<div class="font-headline-md text-headline-md mb-6 border-b-2 border-on-background pb-2 inline-block w-3/4">Chapter 4: Neural Networks</div>
+<div class="space-y-4">
+<div class="h-4 bg-outline-variant/30 rounded w-full"></div>
+<div class="h-4 bg-outline-variant/30 rounded w-5/6"></div>
+<div class="h-4 bg-outline-variant/30 rounded w-11/12"></div>
+<div class="h-32 bg-surface-container-high/50 sketch-border mt-8 w-1/2 ml-auto"></div>
+<div class="h-4 bg-outline-variant/30 rounded w-4/5 mt-8"></div>
+<div class="h-4 bg-outline-variant/30 rounded w-full"></div>
+</div>
+</div>
+<!-- SEARCH OVERLAY (Sliding over the workspace) -->
+<div class="absolute inset-0 bg-background/60 backdrop-blur-sm z-20 flex justify-center items-start pt-24 md:pt-32 px-gutter pb-8 overflow-y-auto">
+<!-- Torn Paper Panel -->
+<div class="w-full max-w-3xl bg-surface-container-lowest sketch-border-thick shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] p-6 md:p-10 relative rotate-[0.5deg] corner-flourish">
+<!-- Tape effect at top -->
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 w-32 h-6 bg-surface-variant/80 rotate-[2deg] border border-on-background/30 shadow-sm mix-blend-multiply"></div>
+<!-- Search Bar Container (Torn strip) -->
+<div class="relative mb-12">
+<div class="bg-surface sketch-border torn-bottom p-4 flex items-center gap-4 relative z-10 shadow-[2px_4px_0px_0px_rgba(0,0,0,1)]">
+<span class="material-symbols-outlined text-3xl text-on-surface-variant rotate-[-5deg]">search</span>
+<input class="w-full bg-transparent border-none focus:ring-0 text-headline-sm font-headline-sm text-on-background placeholder:text-outline placeholder:font-body-md" placeholder="search a keyword, formula, or definition..." type="text" value="gradient descent"/>
+<!-- Clear button -->
+<button class="w-8 h-8 rounded-full sketch-border flex items-center justify-center hover:bg-error-container hover:text-on-error-container transition-colors">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+<!-- Results Layout -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+<!-- Left Column: Notes -->
+<div class="space-y-6">
+<div class="flex items-center gap-2 border-b-2 border-on-background pb-1 border-dashed">
+<span class="material-symbols-outlined text-primary">sticky_note_2</span>
+<h2 class="font-headline-sm text-headline-sm text-primary">In your notes</h2>
+</div>
+<!-- Result Card 1 -->
+<div class="bg-surface sketch-border p-4 relative hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer group">
+<!-- Page Flag -->
+<div class="absolute -top-3 -right-3 bg-secondary-container text-on-secondary-container font-label-caps text-label-caps px-2 py-1 sketch-border rotate-[10deg] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                Lec. 4
+                            </div>
+<p class="font-body-md text-on-background mb-2">
+                                Remember that <span class="marker-highlight-yellow font-bold">gradient descent</span> is just trying to find the local minimum. Watch out for saddle points!
+                            </p>
+<span class="text-xs text-outline font-source-code mt-2 block group-hover:text-primary">12 mins ago</span>
+</div>
+<!-- Result Card 2 -->
+<div class="bg-surface sketch-border p-4 relative hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer group rotate-[-1deg]">
+<!-- Page Flag -->
+<div class="absolute -top-3 -right-3 bg-secondary-container text-on-secondary-container font-label-caps text-label-caps px-2 py-1 sketch-border rotate-[-5deg] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                Quick Note
+                            </div>
+<p class="font-body-md text-on-background">
+                                Stochastic <span class="marker-highlight-yellow font-bold">gradient descent</span> updates weights per example, faster but noisier convergence.
+                            </p>
+<span class="text-xs text-outline font-source-code mt-2 block group-hover:text-primary">Yesterday</span>
+</div>
+</div>
+<!-- Right Column: PDF Content -->
+<div class="space-y-6">
+<div class="flex items-center gap-2 border-b-2 border-on-background pb-1 border-dashed">
+<span class="material-symbols-outlined text-secondary">description</span>
+<h2 class="font-headline-sm text-headline-sm text-secondary">In the PDF</h2>
+</div>
+<!-- Result Card 3 -->
+<div class="bg-surface-container-low sketch-border p-4 relative hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer group border-b-[4px]">
+<!-- Page Flag -->
+<div class="absolute -bottom-3 -right-3 bg-primary-container text-on-primary-container font-label-caps text-label-caps px-2 py-1 sketch-border rotate-[-12deg] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                p. 114
+                            </div>
+<div class="font-label-caps text-label-caps text-outline mb-1">Section 4.3.1</div>
+<p class="font-body-md text-on-surface-variant italic border-l-2 border-primary pl-2 ml-1">
+                                "...the core optimization algorithm used is <span class="marker-highlight-blue text-on-background font-bold">gradient descent</span>, defined formally as..."
+                            </p>
+</div>
+<!-- Result Card 4 -->
+<div class="bg-surface-container-low sketch-border p-4 relative hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer group border-b-[4px] rotate-[1deg]">
+<!-- Page Flag -->
+<div class="absolute -bottom-3 -right-3 bg-primary-container text-on-primary-container font-label-caps text-label-caps px-2 py-1 sketch-border rotate-[8deg] shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                p. 118
+                            </div>
+<div class="font-label-caps text-label-caps text-outline mb-1">Figure 4.5 Caption</div>
+<p class="font-body-md text-on-surface-variant italic border-l-2 border-primary pl-2 ml-1">
+                                "Visual representation of <span class="marker-highlight-blue text-on-background font-bold">gradient descent</span> trajectory across a non-convex loss surface."
+                            </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Topic Transition Card</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Karla:wght@400;700&amp;family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#c1c7d3",
+                      "on-surface": "#1c1b1b",
+                      "primary": "#005da7",
+                      "surface-container": "#f0eded",
+                      "surface-variant": "#e5e2e1",
+                      "inverse-on-surface": "#f3f0ef",
+                      "on-error-container": "#93000a",
+                      "tertiary-fixed": "#a1fa49",
+                      "surface-container-highest": "#e5e2e1",
+                      "on-primary-fixed": "#001c39",
+                      "on-secondary": "#ffffff",
+                      "tertiary": "#386800",
+                      "outline": "#717783",
+                      "on-tertiary-container": "#f9ffeb",
+                      "on-primary-container": "#fdfcff",
+                      "error": "#ba1a1a",
+                      "on-tertiary": "#ffffff",
+                      "background": "#fcf9f8",
+                      "primary-fixed-dim": "#a4c9ff",
+                      "surface-dim": "#dcd9d9",
+                      "inverse-primary": "#a4c9ff",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "on-secondary-container": "#6b4500",
+                      "secondary-fixed": "#ffddb4",
+                      "on-tertiary-fixed": "#0e2000",
+                      "surface-container-low": "#f6f3f2",
+                      "on-error": "#ffffff",
+                      "on-background": "#1c1b1b",
+                      "surface-bright": "#fcf9f8",
+                      "secondary-fixed-dim": "#ffb955",
+                      "on-primary-fixed-variant": "#004883",
+                      "surface": "#fcf9f8",
+                      "on-surface-variant": "#414751",
+                      "on-primary": "#ffffff",
+                      "inverse-surface": "#313030",
+                      "on-tertiary-fixed-variant": "#2a5000",
+                      "primary-container": "#2976c7",
+                      "on-secondary-fixed": "#291800",
+                      "primary-fixed": "#d4e3ff",
+                      "error-container": "#ffdad6",
+                      "tertiary-container": "#498300",
+                      "surface-container-lowest": "#ffffff",
+                      "tertiary-fixed-dim": "#87dc2c",
+                      "surface-tint": "#0060ac",
+                      "secondary-container": "#feae2c",
+                      "secondary": "#835500",
+                      "surface-container-high": "#eae7e7"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "lg": "24px",
+                      "sm": "8px",
+                      "unit": "4px",
+                      "margin-desktop": "32px",
+                      "xl": "40px",
+                      "gutter": "16px",
+                      "md": "16px",
+                      "margin-mobile": "16px",
+                      "xs": "4px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Karla"
+                      ],
+                      "body-md": [
+                              "Karla"
+                      ],
+                      "display-lg": [
+                              "Bricolage Grotesque"
+                      ],
+                      "source-code": [
+                              "JetBrains Mono"
+                      ],
+                      "label-caps": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-md": [
+                              "Bricolage Grotesque"
+                      ],
+                      "headline-sm": [
+                              "Bricolage Grotesque"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "source-code": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-sm": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        /* Wobbly lines for the "Scholar's Sketchbook" aesthetic */
+        .wobbly-border {
+            border: 2px solid #1c1b1b;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+        }
+        .wobbly-border-bottom {
+            border-bottom: 2px solid #1c1b1b;
+            border-bottom-left-radius: 255px 15px;
+            border-bottom-right-radius: 15px 255px;
+        }
+        
+        .torn-paper {
+            position: relative;
+            background: #ffffff;
+            border: 2px solid #1c1b1b;
+        }
+        .torn-paper::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: -2px;
+            right: -2px;
+            height: 6px;
+            background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,0 L0,2 Q10,6 20,2 T40,2 T60,2 T80,2 T100,2 L100,0 Z' fill='%23ffffff' stroke='%231c1b1b' stroke-width='2'/%3E%3C/svg%3E");
+            background-repeat: repeat-x;
+        }
+
+        .highlight-mustard {
+            background: linear-gradient(104deg, rgba(254, 174, 44, 0) 0.9%, rgba(254, 174, 44, 1.25) 2.4%, rgba(254, 174, 44, 0.5) 5.8%, rgba(254, 174, 44, 0.1) 93%, rgba(254, 174, 44, 0.7) 96%, rgba(254, 174, 44, 0) 98%), linear-gradient(183deg, rgba(254, 174, 44, 0) 0%, rgba(254, 174, 44, 0.3) 7.9%, rgba(254, 174, 44, 0) 15%);
+        }
+        
+        .highlight-blue {
+            background: linear-gradient(104deg, rgba(0, 93, 167, 0) 0.9%, rgba(0, 93, 167, 0.25) 2.4%, rgba(0, 93, 167, 0.5) 5.8%, rgba(0, 93, 167, 0.1) 93%, rgba(0, 93, 167, 0.7) 96%, rgba(0, 93, 167, 0) 98%), linear-gradient(183deg, rgba(0, 93, 167, 0) 0%, rgba(0, 93, 167, 0.3) 7.9%, rgba(0, 93, 167, 0) 15%);
+        }
+
+        .hand-drawn-arrow {
+            position: relative;
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+        }
+        .hand-drawn-arrow::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #1c1b1b;
+            transform: translateY(-50%) rotate(2deg);
+        }
+        .hand-drawn-arrow::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 0;
+            width: 8px;
+            height: 8px;
+            border-top: 2px solid #1c1b1b;
+            border-right: 2px solid #1c1b1b;
+            transform: translateY(-50%) rotate(45deg);
+        }
+    </style>
+</head>
+<body class="bg-background min-h-screen flex items-center justify-center p-lg font-body-md text-on-background">
+<!-- Container for context (simulating the scrollable list) -->
+<div class="w-full max-w-2xl flex flex-col gap-lg items-center">
+<!-- Placeholder Note Card Above -->
+<div class="w-full bg-surface-container wobbly-border p-md rotate-[-1deg] opacity-60">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-sm">Supervised Learning Overview</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Notes on fundamental concepts...</p>
+</div>
+<!-- Topic Transition Card -->
+<div class="relative w-11/12 max-w-xl mx-auto flex items-center justify-between p-sm px-md torn-paper rotate-[1deg] shadow-[2px_2px_0px_rgba(28,27,27,1)] z-10 my-md hover:-translate-y-1 hover:rotate-0 transition-transform duration-300">
+<!-- Icon/Signpost Left -->
+<div class="flex-shrink-0 mr-md border-r-2 border-on-surface pr-sm wobbly-border-bottom border-b-0 border-l-0 border-t-0">
+<span class="material-symbols-outlined text-primary text-3xl font-bold" data-icon="explore" data-weight="fill" style="font-variation-settings: 'FILL' 1;">explore</span>
+</div>
+<!-- Content Container -->
+<div class="flex-grow flex flex-col md:flex-row items-center justify-between gap-sm text-center md:text-left overflow-hidden">
+<!-- Previous -->
+<div class="flex flex-col items-center md:items-start shrink">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-xs opacity-70">Previous</span>
+<span class="font-source-code text-source-code text-on-surface highlight-mustard px-1 rounded-sm">Supervised Learning</span>
+</div>
+<!-- Arrow 1 -->
+<div class="hidden md:block hand-drawn-arrow mx-xs shrink-0"></div>
+<div class="md:hidden w-px h-4 bg-on-surface wobbly-border mx-auto my-xs"></div>
+<!-- Now -->
+<div class="flex flex-col items-center md:items-center grow relative">
+<div class="absolute -top-3 -left-2 w-full h-full bg-secondary-container/20 wobbly-border rotate-[-2deg] -z-10"></div>
+<span class="font-label-caps text-label-caps text-primary mb-xs">Now</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold leading-tight">Classification Algorithms</span>
+</div>
+<!-- Arrow 2 -->
+<div class="hidden md:block hand-drawn-arrow mx-xs shrink-0"></div>
+<div class="md:hidden w-px h-4 bg-on-surface wobbly-border mx-auto my-xs"></div>
+<!-- Next -->
+<div class="flex flex-col items-center md:items-end shrink text-right">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-xs opacity-70">Next</span>
+<span class="font-source-code text-source-code text-on-surface highlight-blue px-1 rounded-sm">Decision Trees</span>
+</div>
+</div>
+<!-- Decorative Tape Top Right -->
+<div class="absolute -top-2 -right-3 w-10 h-4 bg-surface-variant wobbly-border rotate-12 z-20"></div>
+</div>
+<!-- Placeholder Note Card Below -->
+<div class="w-full bg-surface-container wobbly-border p-md rotate-[1.5deg] opacity-60">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-sm">Decision Trees Setup</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Initial thoughts on structure...</p>
+</div>
+</div>
+</body></html>

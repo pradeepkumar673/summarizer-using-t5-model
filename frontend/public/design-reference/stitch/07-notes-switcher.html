@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>pradeepLLM - Notes View Switcher</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&amp;family=Karla:wght@400&amp;family=JetBrains+Mono:wght@400;700&amp;family=Caveat:wght@600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline": "#717783",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-variant": "#e5e2e1",
+                        "surface-tint": "#0060ac",
+                        "outline-variant": "#c1c7d3",
+                        "inverse-surface": "#313030",
+                        "inverse-primary": "#a4c9ff",
+                        "on-primary-container": "#fdfcff",
+                        "error": "#ba1a1a",
+                        "tertiary": "#386800",
+                        "on-primary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-container-highest": "#e5e2e1",
+                        "secondary-fixed-dim": "#ffb955",
+                        "secondary": "#835500",
+                        "surface-dim": "#dcd9d9",
+                        "inverse-on-surface": "#f3f0ef",
+                        "on-secondary-container": "#6b4500",
+                        "on-tertiary-fixed-variant": "#2a5000",
+                        "surface-container": "#f0eded",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#87dc2c",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#feae2c",
+                        "surface-container-high": "#eae7e7",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "primary-container": "#2976c7",
+                        "on-secondary-fixed": "#291800",
+                        "on-background": "#1c1b1b",
+                        "surface-bright": "#fcf9f8",
+                        "on-surface": "#1c1b1b",
+                        "error-container": "#ffdad6",
+                        "surface": "#fcf9f8",
+                        "on-tertiary-container": "#f9ffeb",
+                        "background": "#fcf9f8",
+                        "on-primary-fixed-variant": "#004883",
+                        "tertiary-container": "#498300",
+                        "primary-fixed": "#d4e3ff",
+                        "tertiary-fixed": "#a1fa49",
+                        "on-primary-fixed": "#001c39",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-error-container": "#93000a",
+                        "on-error": "#ffffff",
+                        "primary": "#005da7",
+                        "surface-container-low": "#f6f3f2",
+                        "on-surface-variant": "#414751",
+                        "on-tertiary-fixed": "#0e2000"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "md": "16px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "margin-desktop": "32px",
+                        "unit": "4px",
+                        "xl": "40px",
+                        "margin-mobile": "16px"
+                    },
+                    fontFamily: {
+                        "headline-sm": ["Bricolage Grotesque"],
+                        "body-md": ["Karla"],
+                        "label-caps": ["JetBrains Mono"],
+                        "display-lg": ["Bricolage Grotesque"],
+                        "source-code": ["JetBrains Mono"],
+                        "body-lg": ["Karla"],
+                        "headline-md": ["Bricolage Grotesque"],
+                        "handwriting": ["Caveat", "cursive"] // Added handwriting font for sketch effect
+                    },
+                    fontSize: {
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "source-code": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Sketchbook Effects */
+        .wobbly-border {
+            border: 2px solid #1c1b1b;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+        }
+        .wobbly-border-thick {
+            border: 3px solid #1c1b1b;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+        }
+        .wobbly-line {
+            border-bottom: 2px solid #1c1b1b;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+        }
+        .torn-bottom {
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), 95% 100%, 90% calc(100% - 5px), 85% 100%, 80% calc(100% - 12px), 75% 100%, 70% calc(100% - 8px), 65% 100%, 60% calc(100% - 10px), 55% 100%, 50% calc(100% - 6px), 45% 100%, 40% calc(100% - 15px), 35% 100%, 30% calc(100% - 8px), 25% 100%, 20% calc(100% - 11px), 15% 100%, 10% calc(100% - 5px), 5% 100%, 0 calc(100% - 10px));
+            padding-bottom: 20px;
+        }
+        .marker-highlight {
+            position: relative;
+            z-index: 1;
+        }
+        .marker-highlight::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -5%;
+            width: 110%;
+            height: 40%;
+            background-color: rgba(41, 118, 199, 0.2); /* Primary-container wash */
+            z-index: -1;
+            transform: rotate(-2deg);
+            border-radius: 10px 50px 10px 50px;
+        }
+        
+        /* Triangle flourish */
+        .corner-triangles::before, .corner-triangles::after,
+        .corner-triangles-inner::before, .corner-triangles-inner::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-color: transparent transparent #1c1b1b transparent;
+        }
+        
+        .corner-triangles::before {
+            top: 6px;
+            left: 6px;
+            border-width: 0 0 8px 8px;
+            transform: rotate(-45deg);
+        }
+        .corner-triangles::after {
+            top: 6px;
+            right: 6px;
+            border-width: 0 8px 8px 0;
+            transform: rotate(45deg);
+        }
+        .corner-triangles-inner::before {
+            bottom: 12px; /* Accommodate torn edge */
+            left: 6px;
+            border-width: 8px 0 0 8px;
+            transform: rotate(-135deg);
+        }
+        .corner-triangles-inner::after {
+            bottom: 12px;
+            right: 6px;
+            border-width: 8px 8px 0 0;
+            transform: rotate(135deg);
+        }
+
+        .notebook-spine {
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(0,0,0,0.02) 20%, 
+                rgba(0,0,0,0.05) 50%, 
+                rgba(0,0,0,0.02) 80%, 
+                transparent 100%);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-full font-body-md overflow-hidden antialiased">
+<!-- Top Navigation Anchor (Shared Component Mapping) -->
+<header class="bg-surface border-b-[3px] border-on-surface wobbly-line flex justify-between items-center w-full px-margin-desktop h-16 z-50 fixed top-0 bg-opacity-90 backdrop-blur-sm">
+<div class="font-headline-md text-headline-md text-primary italic transform -rotate-1">pradeepLLM</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface hover:text-primary transition-colors cursor-pointer" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</div>
+</header>
+<!-- Side Navigation Shell (Shared Component Mapping) -->
+<!-- Positioned on the right as per json, but we'll integrate it visually as bookmark tabs -->
+<nav class="fixed right-0 top-0 h-full flex flex-col items-center py-lg gap-sm z-40 pt-24 w-[60px] md:w-[80px]">
+<!-- Active Tab: Notes -->
+<div class="relative w-full group cursor-pointer">
+<div class="absolute inset-0 bg-secondary border-y-2 border-l-2 border-on-surface rounded-l-lg -right-1 z-10 shadow-[-2px_2px_0px_#1c1b1b]"></div>
+<div class="relative z-20 flex justify-center py-sm -translate-x-1">
+<span class="material-symbols-outlined text-on-secondary" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<span class="absolute right-full mr-2 top-1/2 -translate-y-1/2 font-label-caps text-label-caps bg-surface-container border-2 border-on-surface px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">Notes</span>
+</div>
+<!-- Inactive Tab: Heatmap -->
+<div class="relative w-full group cursor-pointer hover:-translate-x-1 transition-transform">
+<div class="absolute inset-0 bg-surface-container border-y-2 border-l-2 border-on-surface rounded-l-lg -right-4 z-0"></div>
+<div class="relative z-20 flex justify-center py-sm pl-2">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">grid_view</span>
+</div>
+<span class="absolute right-full mr-2 top-1/2 -translate-y-1/2 font-label-caps text-label-caps bg-surface-container border-2 border-on-surface px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">Heatmap</span>
+</div>
+<!-- Inactive Tab: Exam Essentials -->
+<div class="relative w-full group cursor-pointer hover:-translate-x-1 transition-transform">
+<div class="absolute inset-0 bg-surface-container border-y-2 border-l-2 border-on-surface rounded-l-lg -right-4 z-0"></div>
+<div class="relative z-20 flex justify-center py-sm pl-2">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">assignment_late</span>
+</div>
+</div>
+<!-- Inactive Tab: Knowledge Graph -->
+<div class="relative w-full group cursor-pointer hover:-translate-x-1 transition-transform">
+<div class="absolute inset-0 bg-surface-container border-y-2 border-l-2 border-on-surface rounded-l-lg -right-4 z-0"></div>
+<div class="relative z-20 flex justify-center py-sm pl-2">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">hub</span>
+</div>
+</div>
+<!-- Inactive Tab: Viva -->
+<div class="relative w-full group cursor-pointer hover:-translate-x-1 transition-transform">
+<div class="absolute inset-0 bg-surface-container border-y-2 border-l-2 border-on-surface rounded-l-lg -right-4 z-0"></div>
+<div class="relative z-20 flex justify-center py-sm pl-2">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">record_voice_over</span>
+</div>
+</div>
+<!-- Inactive Tab: Search -->
+<div class="relative w-full group cursor-pointer hover:-translate-x-1 transition-transform mt-auto mb-lg">
+<div class="absolute inset-0 bg-surface-container border-y-2 border-l-2 border-on-surface rounded-l-lg -right-4 z-0"></div>
+<div class="relative z-20 flex justify-center py-sm pl-2">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">search</span>
+</div>
+</div>
+</nav>
+<!-- Main Workspace: Two-Page Spread -->
+<main class="pt-16 h-full flex flex-col md:flex-row w-full pr-[60px] md:pr-[80px]">
+<!-- Left Page: PDF Source View -->
+<section class="flex-1 h-full bg-surface-container border-r-2 border-on-surface notebook-spine relative p-gutter overflow-hidden flex flex-col">
+<!-- Simulated PDF Viewer Canvas -->
+<div class="flex-1 w-full bg-white border-2 border-on-surface rounded-sm shadow-md overflow-hidden relative flex flex-col">
+<div class="h-10 bg-surface-variant border-b-2 border-on-surface flex items-center px-sm justify-between">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Chapter_4_Thermodynamics.pdf</span>
+<div class="flex gap-2">
+<button class="w-6 h-6 border-2 border-on-surface rounded flex items-center justify-center hover:bg-primary-container/20">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<button class="w-6 h-6 border-2 border-on-surface rounded flex items-center justify-center hover:bg-primary-container/20">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+</div>
+<div class="flex-1 p-lg overflow-y-auto wobbly-border-thick m-4 bg-surface-container-lowest">
+<!-- PDF Content Placeholder -->
+<h2 class="font-headline-md text-headline-md mb-md font-bold border-b-2 border-on-surface pb-2 w-max">4.1 The First Law</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 leading-relaxed">
+                        The first law of thermodynamics is an expression of the principle of conservation of energy. It states that energy can be transformed from one form to another, but cannot be created or destroyed.
+                    </p>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 leading-relaxed">
+                        For a closed system, the change in internal energy ($\Delta U$) is equal to the heat added to the system ($Q$) minus the work done by the system ($W$).
+                    </p>
+<div class="p-4 bg-primary-fixed/20 border-l-4 border-primary italic font-body-lg text-body-lg my-6">
+                        ΔU = Q - W
+                    </div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 leading-relaxed">
+                        In an isolated system, neither mass nor energy can cross the boundary. Therefore, the internal energy of an isolated system remains constant.
+                    </p>
+</div>
+</div>
+<!-- Margin Doodle -->
+<div class="absolute bottom-10 left-6 opacity-30 transform -rotate-12 pointer-events-none">
+<span class="material-symbols-outlined text-4xl">draw</span>
+</div>
+</section>
+<!-- Right Page: Notes View Switcher -->
+<section class="flex-1 h-full bg-surface relative p-gutter overflow-hidden flex flex-col">
+<!-- View Switcher Tabs (Folder style) -->
+<div class="flex gap-2 mb-md pt-4 px-2 overflow-x-auto no-scrollbar relative z-10 border-b-2 border-on-surface">
+<button class="px-4 py-2 border-2 border-b-0 border-on-surface rounded-t-lg bg-surface-container text-on-surface-variant font-handwriting text-xl hover:bg-surface-variant transition-colors mt-2">
+                    Paragraph
+                </button>
+<button class="px-4 py-2 border-2 border-b-0 border-on-surface rounded-t-lg bg-surface-container text-on-surface-variant font-handwriting text-xl hover:bg-surface-variant transition-colors mt-2">
+                    Page
+                </button>
+<!-- Active Tab -->
+<button class="px-6 py-3 border-2 border-b-0 border-on-surface rounded-t-lg bg-surface text-on-surface font-handwriting text-2xl marker-highlight relative z-20 translate-y-[2px] shadow-[-2px_-2px_0px_rgba(0,0,0,0.1)]">
+                    Topic
+                </button>
+<button class="px-4 py-2 border-2 border-b-0 border-on-surface rounded-t-lg bg-surface-container text-on-surface-variant font-handwriting text-xl hover:bg-surface-variant transition-colors mt-2">
+                    Chapter
+                </button>
+</div>
+<!-- Notes List Canvas -->
+<div class="flex-1 overflow-y-auto px-2 pb-24 space-y-lg no-scrollbar">
+<!-- Note Card 1 -->
+<article class="bg-surface-container-lowest wobbly-border torn-bottom p-md relative group hover:bg-primary-fixed/5 transition-colors cursor-pointer transform rotate-[1deg] corner-triangles">
+<div class="corner-triangles-inner"></div>
+<!-- Sticky Corner Tag -->
+<div class="absolute -top-2 -right-2 bg-secondary-fixed border-2 border-on-surface px-2 py-0.5 transform rotate-6 font-handwriting text-lg shadow-[2px_2px_0px_rgba(0,0,0,0.8)] z-10">
+                        p. 34
+                    </div>
+<h3 class="font-handwriting text-2xl font-bold mb-4 marker-highlight w-max">The First Law</h3>
+<ul class="space-y-3 font-handwriting text-xl pl-4 relative">
+<li class="relative before:content-[''] before:absolute before:w-2 before:h-2 before:bg-on-surface before:rounded-full before:left-[-16px] before:top-[10px] before:opacity-70">
+                            Energy conservation principle.
+                        </li>
+<li class="relative before:content-[''] before:absolute before:w-2 before:h-2 before:bg-on-surface before:rounded-full before:left-[-16px] before:top-[10px] before:opacity-70">
+                            Can't create or destroy, only transform.
+                        </li>
+<li class="relative before:content-[''] before:absolute before:w-2 before:h-2 before:bg-on-surface before:rounded-full before:left-[-16px] before:top-[10px] before:opacity-70">
+                            Basis for all thermal equations here.
+                        </li>
+</ul>
+</article>
+<!-- Note Card 2 -->
+<article class="bg-surface-container-lowest wobbly-border torn-bottom p-md relative group hover:bg-primary-fixed/5 transition-colors cursor-pointer transform -rotate-[0.5deg] corner-triangles">
+<div class="corner-triangles-inner"></div>
+<!-- Sticky Corner Tag -->
+<div class="absolute -top-2 -right-2 bg-secondary-fixed border-2 border-on-surface px-2 py-0.5 transform rotate-3 font-handwriting text-lg shadow-[2px_2px_0px_rgba(0,0,0,0.8)] z-10">
+                        p. 35
+                    </div>
+<h3 class="font-handwriting text-2xl font-bold mb-4 marker-highlight w-max">Closed Systems</h3>
+<ul class="space-y-3 font-handwriting text-xl pl-4 relative">
+<li class="relative before:content-[''] before:absolute before:w-2 before:h-2 before:bg-on-surface before:rounded-full before:left-[-16px] before:top-[10px] before:opacity-70">
+                            Mass doesn't cross boundary.
+                        </li>
+<li class="relative before:content-[''] before:absolute before:w-2 before:h-2 before:bg-on-surface before:rounded-full before:left-[-16px] before:top-[10px] before:opacity-70">
+                            Energy (heat/work) CAN cross.
+                        </li>
+</ul>
+</article>
+<!-- Note Card 3 -->
+<article class="bg-surface-container-lowest wobbly-border torn-bottom p-md relative group hover:bg-primary-fixed/5 transition-colors cursor-pointer transform rotate-[1.5deg] corner-triangles">
+<div class="corner-triangles-inner"></div>
+<!-- Sticky Corner Tag -->
+<div class="absolute -top-2 -right-2 bg-secondary-fixed border-2 border-on-surface px-2 py-0.5 transform -rotate-4 font-handwriting text-lg shadow-[2px_2px_0px_rgba(0,0,0,0.8)] z-10">
+                        p. 36
+                    </div>
+<h3 class="font-handwriting text-2xl font-bold mb-4 marker-highlight w-max">Work &amp; Heat</h3>
+<ul class="space-y-3 font-handwriting text-xl pl-4 relative">
+<li class="relative before:content-[''] before:absolute before:w-2 before:h-2 before:bg-on-surface before:rounded-full before:left-[-16px] before:top-[10px] before:opacity-70">
+                            ΔU = Q - W formula is key.
+                        </li>
+<li class="relative before:content-[''] before:absolute before:w-2 before:h-2 before:bg-on-surface before:rounded-full before:left-[-16px] before:top-[10px] before:opacity-70">
+                            Watch sign conventions for W!
+                        </li>
+<li class="relative before:content-[''] before:absolute before:w-2 before:h-2 before:bg-on-surface before:rounded-full before:left-[-16px] before:top-[10px] before:opacity-70">
+                            Expansion work vs compression work.
+                        </li>
+</ul>
+</article>
+</div>
+<!-- Floating Action Button - Contextual to Notes -->
+<button class="absolute bottom-6 right-6 w-14 h-14 bg-primary-container border-3 border-on-surface rounded-full flex items-center justify-center shadow-[4px_4px_0px_#1c1b1b] hover:translate-y-1 hover:shadow-[2px_2px_0px_#1c1b1b] transition-all group z-50">
+<span class="material-symbols-outlined text-on-primary-container text-2xl group-hover:scale-110 transition-transform">edit_note</span>
+</button>
+</section>
+</main>
+</body></html>

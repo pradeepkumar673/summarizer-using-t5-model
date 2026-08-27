@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Knowledge Graph - pradeepLLM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&amp;family=JetBrains+Mono:wght@400;700&amp;family=Karla:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#f9ffeb",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-container-low": "#f6f3f2",
+                        "on-tertiary-fixed-variant": "#2a5000",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#1c1b1b",
+                        "surface": "#fcf9f8",
+                        "on-tertiary-fixed": "#0e2000",
+                        "surface-dim": "#dcd9d9",
+                        "on-secondary-container": "#6b4500",
+                        "on-primary-fixed-variant": "#004883",
+                        "background": "#fcf9f8",
+                        "tertiary-container": "#498300",
+                        "secondary-container": "#feae2c",
+                        "on-primary-container": "#fdfcff",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface-container": "#f0eded",
+                        "tertiary-fixed": "#a1fa49",
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#eae7e7",
+                        "on-error": "#ffffff",
+                        "surface-variant": "#e5e2e1",
+                        "tertiary-fixed-dim": "#87dc2c",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#a4c9ff",
+                        "secondary-fixed-dim": "#ffb955",
+                        "surface-tint": "#0060ac",
+                        "outline-variant": "#c1c7d3",
+                        "inverse-surface": "#313030",
+                        "inverse-on-surface": "#f3f0ef",
+                        "surface-container-highest": "#e5e2e1",
+                        "primary-fixed": "#d4e3ff",
+                        "on-background": "#1c1b1b",
+                        "surface-bright": "#fcf9f8",
+                        "on-error-container": "#93000a",
+                        "outline": "#717783",
+                        "on-secondary-fixed": "#291800",
+                        "on-surface-variant": "#414751",
+                        "secondary": "#835500",
+                        "primary-container": "#2976c7",
+                        "primary": "#005da7",
+                        "error": "#ba1a1a",
+                        "on-primary-fixed": "#001c39",
+                        "tertiary": "#386800"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "xl": "40px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "margin-desktop": "32px",
+                        "unit": "4px",
+                        "lg": "24px",
+                        "sm": "8px",
+                        "margin-mobile": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Karla"],
+                        "display-lg": ["Bricolage Grotesque"],
+                        "headline-md": ["Bricolage Grotesque"],
+                        "body-lg": ["Karla"],
+                        "headline-sm": ["Bricolage Grotesque"],
+                        "source-code": ["JetBrains Mono"],
+                        "label-caps": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "source-code": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Tactile / Sketchbook styles */
+        .wobbly-border {
+            border: 2px solid #1c1b1b;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+        }
+        .wobbly-border-thick {
+            border: 3px solid #1c1b1b;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+        }
+        .torn-edge-bottom {
+            border-bottom: 2px dashed #1c1b1b;
+            position: relative;
+        }
+        .torn-edge-bottom::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 50%, #fcf9f8 50%);
+            background-size: 8px 100%;
+        }
+        .grid-bg {
+            background-image: 
+                linear-gradient(to right, #e5e2e1 1px, transparent 1px),
+                linear-gradient(to bottom, #e5e2e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        /* Line drawing SVG paths for the graph */
+        .hand-drawn-line {
+            stroke: #1c1b1b;
+            stroke-width: 2;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(1px 1px 0px rgba(0,0,0,0.1));
+        }
+        .marker-highlight {
+            stroke: #005da7; /* Primary blue wash */
+            stroke-width: 8;
+            fill: none;
+            stroke-linecap: round;
+            opacity: 0.4;
+        }
+
+        /* Blob shapes for nodes */
+        .blob-1 { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+        .blob-2 { border-radius: 50% 50% 30% 70% / 50% 40% 60% 50%; }
+        .blob-3 { border-radius: 30% 70% 50% 50% / 60% 30% 70% 40%; }
+        .blob-4 { border-radius: 60% 40% 60% 40% / 40% 60% 40% 60%; }
+
+        .stacked-paper {
+            box-shadow: 2px 2px 0 0 #1c1b1b;
+        }
+
+        /* Hide scrollbar */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col md:flex-row overflow-hidden">
+<!-- Mobile Top Bar (Hidden on md) -->
+<header class="md:hidden flex justify-between items-center w-full px-margin-mobile h-16 z-50 bg-surface border-b-[3px] border-on-surface">
+<div class="font-headline-md text-headline-md text-primary italic">pradeepLLM</div>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+</div>
+</header>
+<!-- Main Canvas Area -->
+<main class="flex-1 relative overflow-hidden grid-bg z-10 cursor-move">
+<!-- SVG Connections Layer (Behind nodes) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<filter id="roughness">
+<feturbulence basefrequency="0.04" numoctaves="3" result="noise" type="fractalNoise"></feturbulence>
+<fedisplacementmap in="SourceGraphic" in2="noise" scale="3" xchannelselector="R" ychannelselector="G"></fedisplacementmap>
+</filter>
+</defs>
+<!-- Line: ML to Supervised -->
+<path class="hand-drawn-line" d="M 400 300 Q 300 250 250 200" filter="url(#roughness)"></path>
+<text fill="#414751" font-family="'JetBrains Mono'" font-size="12" transform="rotate(-35 310 240)" x="310" y="240">includes</text>
+<!-- Line: ML to Unsupervised -->
+<path class="hand-drawn-line" d="M 400 300 Q 550 250 600 200" filter="url(#roughness)"></path>
+<text fill="#414751" font-family="'JetBrains Mono'" font-size="12" transform="rotate(25 500 240)" x="500" y="240">includes</text>
+<!-- Line: Supervised to Classification (HIGHLIGHTED) -->
+<path class="marker-highlight" d="M 250 200 Q 150 280 180 380" filter="url(#roughness)"></path>
+<path class="hand-drawn-line" d="M 250 200 Q 150 280 180 380" filter="url(#roughness)"></path>
+<text fill="#414751" font-family="'JetBrains Mono'" font-size="12" transform="rotate(75 180 280)" x="180" y="280">is a type of</text>
+<!-- Line: Supervised to Regression -->
+<path class="hand-drawn-line" d="M 250 200 Q 280 100 350 120" filter="url(#roughness)"></path>
+<!-- Line: Unsupervised to Clustering -->
+<path class="hand-drawn-line" d="M 600 200 Q 700 280 650 380" filter="url(#roughness)"></path>
+</svg>
+<!-- Nodes Layer -->
+<div class="absolute inset-0 w-full h-full pointer-events-none">
+<!-- Central Node -->
+<div class="absolute top-[280px] left-[350px] w-32 h-32 bg-white wobbly-border blob-1 flex items-center justify-center p-4 text-center transform -rotate-2 hover:bg-primary/10 transition-colors pointer-events-auto cursor-pointer stacked-paper">
+<span class="font-headline-sm text-headline-sm text-on-surface">Machine Learning</span>
+</div>
+<!-- Supervised Node -->
+<div class="absolute top-[160px] left-[180px] w-28 h-28 bg-white wobbly-border blob-2 flex items-center justify-center p-4 text-center transform rotate-3 hover:bg-primary/10 transition-colors pointer-events-auto cursor-pointer">
+<span class="font-body-lg text-body-lg text-on-surface">Supervised Learning</span>
+</div>
+<!-- Unsupervised Node -->
+<div class="absolute top-[160px] left-[550px] w-28 h-28 bg-white wobbly-border blob-3 flex items-center justify-center p-4 text-center transform -rotate-1 hover:bg-primary/10 transition-colors pointer-events-auto cursor-pointer">
+<span class="font-body-lg text-body-lg text-on-surface">Unsupervised Learning</span>
+</div>
+<!-- Classification Node -->
+<div class="absolute top-[350px] left-[120px] w-24 h-24 bg-white wobbly-border blob-4 flex items-center justify-center p-4 text-center transform rotate-6 hover:bg-primary/10 transition-colors pointer-events-auto cursor-pointer">
+<span class="font-body-md text-body-md text-on-surface">Classification</span>
+</div>
+<!-- Regression Node -->
+<div class="absolute top-[80px] left-[320px] w-24 h-24 bg-white wobbly-border blob-1 flex items-center justify-center p-4 text-center transform -rotate-4 hover:bg-primary/10 transition-colors pointer-events-auto cursor-pointer">
+<span class="font-body-md text-body-md text-on-surface">Regression</span>
+</div>
+<!-- Clustering Node -->
+<div class="absolute top-[350px] left-[600px] w-24 h-24 bg-white wobbly-border blob-2 flex items-center justify-center p-4 text-center transform rotate-2 hover:bg-primary/10 transition-colors pointer-events-auto cursor-pointer">
+<span class="font-body-md text-body-md text-on-surface">Clustering</span>
+</div>
+</div>
+<!-- Evidence Popup (Floating near highlighted edge) -->
+<div class="absolute top-[280px] left-[200px] w-64 bg-surface wobbly-border-thick p-4 transform rotate-1 stacked-paper z-20">
+<div class="font-source-code text-source-code text-on-surface-variant mb-4 torn-edge-bottom pb-2">
+                "Classification is a supervised learning approach in which the computer program learns from the data input given to it..."
+            </div>
+<div class="flex justify-end">
+<button class="wobbly-border w-8 h-8 rounded-full flex items-center justify-center hover:bg-primary/20 transition-colors group" title="View in PDF">
+<span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform text-sm">menu_book</span>
+</button>
+</div>
+</div>
+<!-- Corner Flourishes -->
+<div class="absolute top-4 left-4 text-on-surface-variant/30 font-label-caps text-label-caps">Page 42</div>
+<div class="absolute bottom-4 left-4 text-on-surface-variant/30 transform -rotate-12">
+<span class="material-symbols-outlined text-4xl">edit</span>
+</div>
+</main>
+<!-- Side Navigation (Web) -->
+<nav class="hidden md:flex fixed right-0 top-0 h-full w-[80px] md:w-[120px] bg-surface-container border-l-2 border-on-surface flex-col items-center py-lg gap-sm z-40 stacked-paper">
+<div class="mb-8 w-full flex flex-col items-center px-2 text-center">
+<div class="w-12 h-12 rounded-full wobbly-border bg-surface overflow-hidden mb-2">
+<img class="w-full h-full object-cover" data-alt="A small hand-drawn avatar doodle of a student with glasses reading a book in a sketchy ink style, light mode." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCA5AONyqfzr5Qj6csY38uPq6tBcx-3wrXCQTOxufXF54eTe50pVe5l0UWACI-W8d_vX7knlP66zxHhIyXywEKK7ebgf3rSZjAdOmbttNiXTtZFL3ypxYNK9jQ37hdfUliKsj7ujcCpN34RV2XjQ3VQHw9u21OMP0ydcyftR18QB3sJxx-EwTYrLkKLFjmpYaf2yvXypWTDSwzteH-Uf7eg0EPIkE0vfBuFZGvuMMVNflDiajEWZTxuUA"/>
+</div>
+<div class="font-headline-sm text-headline-sm text-on-surface truncate w-full">Study Journal</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant truncate w-full">Active Session</div>
+</div>
+<!-- Tabs -->
+<button class="w-full relative py-4 px-2 flex flex-col items-center gap-1 text-on-surface-variant hover:translate-x-[-4px] transition-transform hover:bg-surface-variant group">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-caps text-label-caps text-[10px] uppercase text-center">Notes</span>
+</button>
+<button class="w-full relative py-4 px-2 flex flex-col items-center gap-1 text-on-surface-variant hover:translate-x-[-4px] transition-transform hover:bg-surface-variant group">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="font-label-caps text-label-caps text-[10px] uppercase text-center">Heatmap</span>
+</button>
+<button class="w-full relative py-4 px-2 flex flex-col items-center gap-1 text-on-surface-variant hover:translate-x-[-4px] transition-transform hover:bg-surface-variant group">
+<span class="material-symbols-outlined">assignment_late</span>
+<span class="font-label-caps text-label-caps text-[10px] uppercase text-center">Exam Essentials</span>
+</button>
+<!-- Active Tab: Knowledge Graph -->
+<button class="w-full relative py-4 px-2 flex flex-col items-center gap-1 bg-secondary-container text-on-secondary-container border-y-2 border-l-2 border-on-surface -translate-x-2 rounded-l-lg z-10 translate-x-[-8px] transition-all duration-150 stacked-paper">
+<span class="material-symbols-outlined">hub</span>
+<span class="font-label-caps text-label-caps text-[10px] uppercase text-center font-bold">Knowledge Graph</span>
+<!-- Ribbon Fold effect -->
+<div class="absolute -right-2 top-0 w-2 h-full bg-secondary border-y-2 border-r-2 border-on-surface hidden"></div>
+</button>
+<button class="w-full relative py-4 px-2 flex flex-col items-center gap-1 text-on-surface-variant hover:translate-x-[-4px] transition-transform hover:bg-surface-variant group">
+<span class="material-symbols-outlined">record_voice_over</span>
+<span class="font-label-caps text-label-caps text-[10px] uppercase text-center">Viva</span>
+</button>
+<button class="w-full relative py-4 px-2 flex flex-col items-center gap-1 text-on-surface-variant hover:translate-x-[-4px] transition-transform hover:bg-surface-variant group">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-caps text-label-caps text-[10px] uppercase text-center">Search</span>
+</button>
+</nav>
+<!-- Mobile Bottom Navigation Shell (Would be implemented here if not hidden by logic, but keeping sidebar equivalent for structure if needed, though mobile usually uses bottom nav. Leaving sidebar as primary per JSON) -->
+</body></html>

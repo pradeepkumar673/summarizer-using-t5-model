@@ -28,8 +28,7 @@ MAX_ROLLUP_DEPTH = 4  # hard ceiling so batch-of-batches can never loop forever
 _tokenizer: T5Tokenizer | None = None
 _model: T5ForConditionalGeneration | None = None
 
-def get_device() -> torch.device:
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from device_utils import get_device
 
 
 def load_model() -> None:

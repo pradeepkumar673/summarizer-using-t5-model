@@ -135,7 +135,8 @@ export default function PdfPane({
 
   useEffect(() => {
     if (activeHighlights.length === 0) return;
-    const key = `${activeHighlights[0].page}_0`;
+    const targetPage = activeHighlights[0].page;
+    const key = `${targetPage}_0`;
     let attempts = 0;
     let raf = 0;
     const tryScroll = () => {
@@ -144,8 +145,13 @@ export default function PdfPane({
         node.scrollIntoView({ behavior: "smooth", block: "center" });
         return;
       }
+      const pageEl = document.getElementById(`pdf-page-${targetPage}`);
+      if (pageEl) {
+        pageEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
       attempts += 1;
-      if (attempts < 30) raf = requestAnimationFrame(tryScroll);
+      if (attempts < 35) raf = requestAnimationFrame(tryScroll);
     };
     tryScroll();
     return () => cancelAnimationFrame(raf);
@@ -199,9 +205,11 @@ export default function PdfPane({
             return (
               <div
                 key={pageNumber}
+                id={`pdf-page-${pageNumber}`}
                 className="relative mx-auto mb-4 border border-slate-200 shadow"
                 style={{ width: scaleInfo?.renderWidth ?? renderWidth }}
               >
+
                 <Page pageNumber={pageNumber} width={renderWidth} onLoadSuccess={handlePageLoadSuccess(pageNumber)} />
 
                 {/* Chunk click overlays (note traceability) */}
