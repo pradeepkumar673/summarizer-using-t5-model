@@ -243,22 +243,26 @@ export default function PdfPane({
                   />
                 )}
 
-                {/* Search / note active-highlight overlays */}
+                {/* Search / note active-highlight overlays (Yellow Highlighter Marker) */}
                 {scaleInfo &&
                   pageHighlights.map((h) => (
                     <div
                       key={`${pageNumber}_${h.idx}`}
                       ref={registerHighlightRef(`${pageNumber}_${h.idx}`)}
-                      className="pointer-events-none absolute rounded-sm bg-yellow-300/50 ring-2 ring-yellow-400"
+                      className="pointer-events-none absolute rounded-sm bg-yellow-300/85 border-b-2 border-yellow-500/90 shadow-[0_1px_3px_rgba(234,179,8,0.3)] transition-all duration-300"
                       style={{
                         left: h.box.x0 * scaleInfo.scale,
                         top: h.box.y0 * scaleInfo.scale,
-                        width: (h.box.x1 - h.box.x0) * scaleInfo.scale,
-                        height: (h.box.y1 - h.box.y0) * scaleInfo.scale,
+                        width: Math.max(10, (h.box.x1 - h.box.x0) * scaleInfo.scale),
+                        height: Math.max(8, (h.box.y1 - h.box.y0) * scaleInfo.scale),
+                        mixBlendMode: "multiply",
                       }}
                     />
                   ))}
               </div>
+
+
+
             );
           })}
         </Document>

@@ -4,6 +4,7 @@ import type { BoundingBox, NoteLevel } from "../api/documents";
 export interface HighlightBox {
   page: number;
   box: BoundingBox;
+  color?: "yellow" | "cyan";
 }
 
 interface FocusSearchResultPayload {
