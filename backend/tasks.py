@@ -105,22 +105,22 @@ async def _run_pipeline(document_id: str, self):
 
         await local_db.notes.delete_many({"document_id": doc_id_str, "level": {"$in": ["paragraph", "topic", "page", "chapter"]}})
 
-        # Collect valid chunks and texts to summarize
+        # Collect valid chunks and texts to summarize (filter out short fragments < 12 words)
         valid_chunks = []
         texts_to_summarize = []
         for chunk in chunks_for_summary:
             text = chunk.get("text", "").strip()
-            if len(text.split()) < 8:
+            if len(text.split()) < 12:
                 continue
             valid_chunks.append(chunk)
             texts_to_summarize.append(text)
 
-        # Batch process the texts (batch size of 32 for GPU acceleration)
+        # Batch process the texts with optimal CPU batch size of 16
         summaries = []
-        batch_size = 32
+        batch_size = 16
         for i in range(0, len(texts_to_summarize), batch_size):
             batch = texts_to_summarize[i : i + batch_size]
-            batch_summaries = summarize_text_batch(batch, max_length=60, min_length=10)
+            batch_summaries = summarize_text_batch(batch, max_length=45, min_length=8)
             summaries.extend(batch_summaries)
 
         note_docs = []

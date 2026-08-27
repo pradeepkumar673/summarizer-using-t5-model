@@ -82,14 +82,14 @@ def summarize_text(text: str, max_length: int = 60, min_length: int = 10) -> str
             **inputs,
             max_length=max_length,
             min_length=min_length,
-            num_beams=2,
-            early_stopping=True,
+            num_beams=1,
+            do_sample=False,
         )
 
     return _tokenizer.decode(output_ids[0], skip_special_tokens=True).strip()
 
 
-def summarize_text_batch(texts: list[str], max_length: int = 60, min_length: int = 10) -> list[str]:
+def summarize_text_batch(texts: list[str], max_length: int = 45, min_length: int = 8) -> list[str]:
     """
     Runs T5 generation on a list of texts in a single batch pass.
     """
@@ -117,8 +117,8 @@ def summarize_text_batch(texts: list[str], max_length: int = 60, min_length: int
             attention_mask=inputs.attention_mask,
             max_length=max_length,
             min_length=min_length,
-            num_beams=2,
-            early_stopping=True,
+            num_beams=1,
+            do_sample=False,
         )
 
     # Decode all outputs

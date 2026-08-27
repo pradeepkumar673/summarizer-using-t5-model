@@ -18,9 +18,11 @@ if hasattr(_redis_conn, "MaintNotificationsConfig"):
         lambda self, *args, **kwargs: _orig_maint_init(self, enabled=False)
     )
 
+import os
 import torch
-# Limit PyTorch CPU threads to prevent 100% CPU system lockup
-torch.set_num_threads(4)
+# Scale PyTorch CPU threads dynamically based on available CPU cores (up to 8)
+torch.set_num_threads(max(1, min(8, os.cpu_count() or 4)))
+
 
 from celery import Celery
 from config import settings
