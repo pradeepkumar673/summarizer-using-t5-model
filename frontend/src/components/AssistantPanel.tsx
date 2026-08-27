@@ -41,7 +41,12 @@ function SourceBadge({
     <button
       onClick={() => onClick(source)}
       title={source.text.slice(0, 120)}
-      className="inline-flex items-center gap-1 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700 transition hover:bg-indigo-100 hover:shadow-sm"
+      className="inline-flex items-center gap-1 bg-primary-fixed/60 text-on-primary-fixed px-2 py-0.5 font-mono text-source-code transition hover:bg-primary-fixed"
+      style={{
+        border: "1px solid #005da7",
+        borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px",
+        fontSize: "10px",
+      }}
     >
       ↗ p.{source.page_number}
     </button>
@@ -57,24 +62,28 @@ function MessageBubble({
 }) {
   const isUser = msg.role === "user";
   return (
-    <div className={`flex flex-col ${isUser ? "items-end" : "items-start"} gap-1`}>
+    <div className={`flex flex-col ${isUser ? "items-end" : "items-start"} gap-1.5`}>
       <div
-        className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed shadow-sm ${
+        className={`max-w-[88%] px-4 py-3 font-body text-body-md leading-relaxed ${
           isUser
-            ? "rounded-tr-sm bg-indigo-600 text-white"
-            : "rounded-tl-sm border border-slate-200 bg-white text-slate-800"
+            ? "bg-primary text-on-primary"
+            : "bg-white text-on-surface border-2 border-on-surface"
         }`}
+        style={{
+          borderRadius: isUser
+            ? "255px 15px 225px 15px / 15px 225px 15px 255px"
+            : "15px 255px 15px 225px / 225px 15px 255px 15px",
+          boxShadow: isUser ? "none" : "2px 2px 0px #1c1b1b",
+        }}
       >
         {isUser ? (
           <p>{msg.content}</p>
         ) : (
-          <div
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-          />
+          <div dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
         )}
       </div>
       {!isUser && msg.sources.length > 0 && (
-        <div className="flex flex-wrap gap-1 pl-1">
+        <div className="flex flex-wrap gap-1.5 pl-1">
           {msg.sources.map((s) => (
             <SourceBadge key={s.chunk_id} source={s} onClick={onSourceClick} />
           ))}
@@ -103,18 +112,10 @@ export default function AssistantPanel({ documentId, isOpen, onClose }: Props) {
     setHistoryLoading(true);
     setError(null);
     getAssistantHistory(documentId)
-      .then((hist) => {
-        if (!cancelled) setMessages(hist);
-      })
-      .catch(() => {
-        if (!cancelled) setError("Could not load conversation history.");
-      })
-      .finally(() => {
-        if (!cancelled) setHistoryLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+      .then((hist) => { if (!cancelled) setMessages(hist); })
+      .catch(() => { if (!cancelled) setError("Could not load conversation history."); })
+      .finally(() => { if (!cancelled) setHistoryLoading(false); });
+    return () => { cancelled = true; };
   }, [isOpen, documentId]);
 
   // Scroll to bottom on new messages
@@ -124,16 +125,11 @@ export default function AssistantPanel({ documentId, isOpen, onClose }: Props) {
 
   // Focus input when panel opens
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 150);
-    }
+    if (isOpen) setTimeout(() => inputRef.current?.focus(), 150);
   }, [isOpen]);
 
   function handleSourceClick(source: AssistantSource) {
-    focusSearchResult({
-      page: source.page_number,
-      box: null, // no tight bbox from vector hits; scroll to page only
-    });
+    focusSearchResult({ page: source.page_number, box: null });
   }
 
   async function handleSend() {
@@ -192,48 +188,55 @@ export default function AssistantPanel({ documentId, isOpen, onClose }: Props) {
   return (
     /* Overlay backdrop */
     <div className="fixed inset-0 z-40 flex justify-end">
-      {/* Semi-transparent backdrop — clicking it closes the panel */}
+      {/* Clicking backdrop closes panel */}
       <div
-        className="absolute inset-0 bg-black/20 backdrop-blur-[1px]"
+        className="absolute inset-0 bg-on-surface/10"
         onClick={onClose}
       />
 
-      {/* Panel itself */}
-      <div className="relative z-50 flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-slate-50 shadow-2xl">
-        {/* ── Header ───────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between border-b bg-white px-4 py-3">
+      {/* Panel — notebook page sliding in from right */}
+      <div
+        className="relative z-50 flex h-full w-full max-w-md flex-col bg-surface"
+        style={{ borderLeft: "3px solid #1c1b1b" }}
+      >
+        {/* ── Header ─────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between border-b-2 border-on-surface bg-surface px-5 py-4">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">
+            <h2 className="font-headline text-headline-sm" style={{ fontSize: "16px" }}>
               🤖 Doubt Assistant
             </h2>
-            <p className="text-[11px] text-slate-400">
-              Answers grounded in this document via Groq&nbsp;AI
+            <p className="font-mono text-source-code text-on-surface-variant mt-0.5">
+              RAG-grounded · Groq AI · source pages clickable
             </p>
           </div>
           <button
             onClick={onClose}
-            className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+            className="hand-drawn-border-thin bg-white p-1.5 text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors"
           >
             ✕
           </button>
         </div>
 
-        {/* ── Message list ─────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        {/* ── Message list ───────────────────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto px-5 py-5 bg-checkered">
           {historyLoading ? (
-            <p className="text-center text-sm text-slate-400">
-              Loading history…
-            </p>
+            <div className="flex items-center gap-2 py-6">
+              <span className="material-symbols-outlined text-primary animate-spin" style={{ animationDuration: "1.5s" }}>autorenew</span>
+              <p className="font-body text-body-md text-on-surface-variant">Loading history...</p>
+            </div>
           ) : messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-              <span className="text-4xl">📚</span>
-              <p className="text-sm font-medium text-slate-600">
-                Ask anything about this document
-              </p>
-              <p className="text-xs text-slate-400">
-                The assistant retrieves the most relevant passages and answers
-                only from them. Source page references are clickable.
-              </p>
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center py-10">
+              <span className="text-5xl">📚</span>
+              <div
+                className="bg-white p-6 max-w-xs"
+                style={{ border: "2px solid #1c1b1b", borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px", boxShadow: "3px 3px 0px #1c1b1b" }}
+              >
+                <p className="font-headline text-headline-sm mb-2">Ask anything</p>
+                <p className="font-body text-body-md text-on-surface-variant">
+                  The assistant retrieves the most relevant passages and answers only from them.
+                  Source page references are clickable.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -246,11 +249,14 @@ export default function AssistantPanel({ documentId, isOpen, onClose }: Props) {
               ))}
               {loading && (
                 <div className="flex items-start gap-2">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-base">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-primary-fixed text-base" style={{ border: "2px solid #1c1b1b", borderRadius: "50%" }}>
                     🤖
                   </div>
-                  <div className="rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-400">
-                    <span className="animate-pulse">Thinking…</span>
+                  <div
+                    className="bg-white px-4 py-3 font-body text-body-md text-on-surface-variant"
+                    style={{ border: "2px solid #1c1b1b", borderRadius: "15px 255px 15px 225px / 225px 15px 255px 15px", boxShadow: "2px 2px 0px #1c1b1b" }}
+                  >
+                    <span className="animate-pulse">Thinking...</span>
                   </div>
                 </div>
               )}
@@ -259,36 +265,44 @@ export default function AssistantPanel({ documentId, isOpen, onClose }: Props) {
           )}
         </div>
 
-        {/* ── Error banner ─────────────────────────────────────────── */}
+        {/* ── Error banner ───────────────────────────────────────────── */}
         {error && (
-          <div className="border-t bg-red-50 px-4 py-2 text-xs text-red-700">
+          <div className="border-t-2 border-on-surface bg-error-container px-5 py-2 font-body text-body-md text-on-error-container">
             {error}
           </div>
         )}
 
-        {/* ── Input box ────────────────────────────────────────────── */}
-        <div className="border-t bg-white px-4 py-3">
-          <div className="flex items-end gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
+        {/* ── Input box ──────────────────────────────────────────────── */}
+        <div className="border-t-2 border-on-surface bg-surface px-5 py-4">
+          <div
+            className="flex items-end gap-3 bg-surface-container-lowest px-4 py-3"
+            style={{ border: "2px solid #1c1b1b", borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px" }}
+          >
             <textarea
               ref={inputRef}
               rows={2}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask a question about the document… (Enter to send)"
+              placeholder="Ask a question… (Enter to send)"
               disabled={loading}
-              className="flex-1 resize-none bg-transparent text-sm text-slate-800 placeholder-slate-400 outline-none disabled:opacity-60"
+              className="flex-1 resize-none bg-transparent font-body text-body-md text-on-surface placeholder-on-surface-variant outline-none disabled:opacity-60"
             />
             <button
               onClick={handleSend}
               disabled={loading || !input.trim()}
-              className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="shrink-0 bg-white px-4 py-2 font-label-caps text-label-caps text-on-surface hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+              style={{
+                border: "2px solid #1c1b1b",
+                borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+                boxShadow: "2px 2px 0px #1c1b1b",
+              }}
             >
               Send
             </button>
           </div>
-          <p className="mt-1.5 text-[10px] text-slate-400">
-            Shift+Enter for new line &bull; Answers cite source pages — click to highlight
+          <p className="mt-2 font-mono text-source-code text-on-surface-variant text-center">
+            Shift+Enter for new line · click source badges to highlight in PDF
           </p>
         </div>
       </div>

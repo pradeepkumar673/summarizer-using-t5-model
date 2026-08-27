@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Marginalia - Source Mapping QA</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&amp;family=JetBrains+Mono:wght@400;700&amp;family=Karla:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#fcf9f8",
+                        "surface-container-high": "#eae7e7",
+                        "secondary-fixed-dim": "#ffb955",
+                        "on-secondary-container": "#6b4500",
+                        "tertiary-container": "#498300",
+                        "surface": "#fcf9f8",
+                        "on-primary-container": "#fdfcff",
+                        "inverse-surface": "#313030",
+                        "on-tertiary-container": "#f9ffeb",
+                        "on-surface-variant": "#414751",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#87dc2c",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary-fixed": "#291800",
+                        "on-primary-fixed-variant": "#004883",
+                        "on-primary-fixed": "#001c39",
+                        "error-container": "#ffdad6",
+                        "outline": "#717783",
+                        "surface-dim": "#dcd9d9",
+                        "primary-fixed": "#d4e3ff",
+                        "on-surface": "#1c1b1b",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "primary-container": "#2976c7",
+                        "on-error": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "surface-bright": "#fcf9f8",
+                        "on-background": "#1c1b1b",
+                        "on-tertiary-fixed-variant": "#2a5000",
+                        "inverse-on-surface": "#f3f0ef",
+                        "surface-tint": "#0060ac",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "secondary": "#835500",
+                        "inverse-primary": "#a4c9ff",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#c1c7d3",
+                        "on-tertiary-fixed": "#0e2000",
+                        "primary": "#005da7",
+                        "surface-container": "#f0eded",
+                        "tertiary-fixed": "#a1fa49",
+                        "surface-variant": "#e5e2e1",
+                        "secondary-container": "#feae2c",
+                        "tertiary": "#386800"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "margin-mobile": "16px",
+                        "xl": "40px",
+                        "sm": "8px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["JetBrains Mono"],
+                        "source-code": ["JetBrains Mono"],
+                        "body-lg": ["Karla"],
+                        "body-md": ["Karla"],
+                        "display-lg": ["Bricolage Grotesque"],
+                        "headline-sm": ["Bricolage Grotesque"],
+                        "headline-md": ["Bricolage Grotesque"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "1.0", "fontWeight": "700" }],
+                        "source-code": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            background-image: 
+                linear-gradient(theme('colors.surface-container-high') 1px, transparent 1px),
+                linear-gradient(90deg, theme('colors.surface-container-high') 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .sketch-border {
+            border: 2px solid theme('colors.on-surface');
+            border-radius: 4px 12px 6px 8px / 8px 4px 12px 6px;
+        }
+
+        .sketch-border-thick {
+            border: 3px solid theme('colors.on-surface');
+            border-radius: 6px 14px 8px 10px / 10px 6px 14px 8px;
+            box-shadow: 2px 3px 0px theme('colors.on-surface');
+        }
+
+        .marker-highlight-yellow {
+            background: linear-gradient(104deg, transparent 0%, rgba(254,174,44,0.3) 2%, rgba(254,174,44,0.6) 98%, transparent 100%);
+            padding: 0 4px;
+            border-radius: 4px;
+        }
+        
+        .marker-highlight-glow {
+            background: linear-gradient(104deg, transparent 0%, rgba(254,174,44,0.1) 2%, rgba(254,174,44,0.2) 98%, transparent 100%);
+            padding: 0 4px;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(254,174,44,0.4);
+        }
+
+        .marker-circle-red {
+            position: relative;
+        }
+        .marker-circle-red::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -15px;
+            right: -15px;
+            bottom: -10px;
+            border: 3px solid theme('colors.error');
+            border-radius: 50% 40% 60% 45% / 45% 60% 40% 50%;
+            pointer-events: none;
+            transform: rotate(-2deg);
+        }
+
+        .marker-box-blue {
+            position: relative;
+        }
+        .marker-box-blue::after {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            right: -8px;
+            bottom: -8px;
+            border: 3px dashed theme('colors.primary');
+            border-radius: 8px 12px 6px 10px / 10px 8px 12px 6px;
+            pointer-events: none;
+        }
+
+        .drawn-arrow-path {
+            stroke-dasharray: 8 6;
+            animation: dash 20s linear infinite;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -1000; }
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased min-h-screen flex flex-col pt-24 pb-12 pr-32 pl-8">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface px-8 h-20 flex items-center justify-between border-b-2 border-on-surface dark:border-on-surface-variant">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md text-primary dark:text-primary-fixed">pradeepLLM</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant bg-surface-container-high px-2 py-1 sketch-border transform -rotate-2">Design QA</span>
+</div>
+<div class="flex gap-4 items-center">
+<span class="material-symbols-outlined text-primary hover:bg-primary-container/10 transition-colors p-2 rounded-full cursor-pointer scale-95 transition-transform" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="fixed right-0 top-24 w-24 flex flex-col gap-4 z-40 h-fit items-end">
+<div class="bg-secondary text-on-secondary py-4 px-2 -mr-1 rounded-l-full border-2 border-on-surface hover:-translate-x-2 transition-transform duration-200 rotate-1 cursor-pointer flex flex-col items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined" data-icon="edit_note" data-weight="fill" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+<span class="font-label-caps text-[10px] text-center leading-tight">Notes</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface opacity-80 hover:-translate-x-2 transition-transform duration-200 rotate-1 cursor-pointer flex flex-col items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined" data-icon="local_fire_department">local_fire_department</span>
+<span class="font-label-caps text-[10px] text-center leading-tight">Heatmap</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface opacity-80 hover:-translate-x-2 transition-transform duration-200 rotate-1 cursor-pointer flex flex-col items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>
+<span class="font-label-caps text-[10px] text-center leading-tight">Exam Ess..</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface opacity-80 hover:-translate-x-2 transition-transform duration-200 rotate-1 cursor-pointer flex flex-col items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+<span class="font-label-caps text-[10px] text-center leading-tight">Knowledge..</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface opacity-80 hover:-translate-x-2 transition-transform duration-200 rotate-1 cursor-pointer flex flex-col items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined" data-icon="record_voice_over">record_voice_over</span>
+<span class="font-label-caps text-[10px] text-center leading-tight">Viva</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface opacity-80 hover:-translate-x-2 transition-transform duration-200 rotate-1 cursor-pointer flex flex-col items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="font-label-caps text-[10px] text-center leading-tight">Search</span>
+</div>
+</nav>
+<main class="w-full max-w-7xl mx-auto flex flex-col gap-8 relative z-10">
+<div class="text-center mb-4">
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2">Source Mapping Interaction</h1>
+<p class="font-body-lg text-on-surface-variant font-source-code">QA Reference Sheet // Build: v0.9.4</p>
+</div>
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-8 relative">
+<!-- State A Panel -->
+<section class="bg-surface-container-lowest sketch-border-thick p-6 relative transform -rotate-1 flex flex-col">
+<div class="absolute -top-3 -left-3 w-6 h-6 border-l-2 border-t-2 border-on-surface"></div>
+<div class="absolute -bottom-3 -right-3 w-6 h-6 border-r-2 border-b-2 border-on-surface"></div>
+<h2 class="font-headline-sm text-headline-sm mb-6 border-b-2 border-on-surface border-dashed pb-2 w-fit">State A: Note Clicked</h2>
+<div class="grid grid-cols-2 gap-6 flex-grow relative">
+<!-- PDF Side -->
+<div class="bg-surface-container-low p-4 sketch-border relative" id="pdf-area-a">
+<div class="font-label-caps text-on-surface-variant mb-4 border-b border-on-surface pb-1 uppercase tracking-widest text-xs">PDF Document</div>
+<div class="font-body-md text-on-surface space-y-4 opacity-80">
+<p>The mitochondria is generally considered the powerhouse of the cell, responsible for generating most of the cell's supply of adenosine triphosphate (ATP).</p>
+<p class="relative z-10"><span class="marker-highlight-yellow">This process, known as cellular respiration, involves a complex series of metabolic pathways that utilize oxygen to break down glucose and other nutrients.</span></p>
+<p>Recent studies have also highlighted its role in signaling, cellular differentiation, and cell death, as well as maintaining control of the cell cycle and cell growth.</p>
+</div>
+</div>
+<!-- Notes Side -->
+<div class="p-4 relative font-source-code" id="notes-area-a">
+<div class="font-label-caps text-on-surface-variant mb-4 border-b border-on-surface pb-1 uppercase tracking-widest text-xs">My Notes</div>
+<ul class="space-y-6 text-on-surface">
+<li class="flex items-start gap-2">
+<span class="text-primary">-</span>
+<span>Mitochondria = Powerhouse (ATP generation)</span>
+</li>
+<li class="flex items-start gap-2 relative z-20">
+<span class="text-primary">-</span>
+<span class="marker-circle-red font-bold">Cellular respiration needs O2 to break down glucose</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="text-primary">-</span>
+<span>Also handles cell cycle control &amp; apoptosis</span>
+</li>
+</ul>
+</div>
+<!-- SVG Arrow for State A -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none z-30 overflow-visible" style="min-height: 250px;">
+<path class="drawn-arrow-path" d="M 280, 150 Q 200, 100 120, 130" fill="none" stroke="var(--tw-colors-error)" stroke-width="3"></path>
+<polygon fill="var(--tw-colors-error)" points="120,130 135,125 130,140" transform="rotate(15 120 130)"></polygon>
+</svg>
+</div>
+</section>
+<!-- State B Panel -->
+<section class="bg-surface-container-lowest sketch-border-thick p-6 relative transform rotate-1 flex flex-col">
+<div class="absolute -top-3 -right-3 w-6 h-6 border-r-2 border-t-2 border-on-surface"></div>
+<div class="absolute -bottom-3 -left-3 w-6 h-6 border-l-2 border-b-2 border-on-surface"></div>
+<h2 class="font-headline-sm text-headline-sm mb-6 border-b-2 border-on-surface border-dashed pb-2 w-fit">State B: Paragraph Clicked</h2>
+<div class="grid grid-cols-2 gap-6 flex-grow relative">
+<!-- PDF Side -->
+<div class="bg-surface-container-low p-4 sketch-border relative" id="pdf-area-b">
+<div class="font-label-caps text-on-surface-variant mb-4 border-b border-on-surface pb-1 uppercase tracking-widest text-xs">PDF Document</div>
+<div class="font-body-md text-on-surface space-y-4 opacity-80">
+<p>The mitochondria is generally considered the powerhouse of the cell, responsible for generating most of the cell's supply of adenosine triphosphate (ATP).</p>
+<div class="marker-box-blue p-2 relative z-10 bg-primary/5">
+<p>This process, known as cellular respiration, involves a complex series of metabolic pathways that utilize oxygen to break down glucose and other nutrients.</p>
+</div>
+<p>Recent studies have also highlighted its role in signaling, cellular differentiation, and cell death...</p>
+</div>
+</div>
+<!-- Notes Side -->
+<div class="p-4 relative font-source-code" id="notes-area-b">
+<div class="font-label-caps text-on-surface-variant mb-4 border-b border-on-surface pb-1 uppercase tracking-widest text-xs">My Notes</div>
+<ul class="space-y-6 text-on-surface">
+<li class="flex items-start gap-2">
+<span class="text-primary">-</span>
+<span>Mitochondria = Powerhouse (ATP generation)</span>
+</li>
+<li class="flex items-start gap-2 relative z-20">
+<span class="text-primary">-</span>
+<span class="marker-highlight-glow border-b-2 border-secondary border-dashed pb-1">Cellular respiration needs O2 to break down glucose</span>
+</li>
+<li class="flex items-start gap-2">
+<span class="text-primary">-</span>
+<span>Also handles cell cycle control &amp; apoptosis</span>
+</li>
+</ul>
+</div>
+<!-- SVG Arrow for State B -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none z-30 overflow-visible" style="min-height: 250px;">
+<path class="drawn-arrow-path" d="M 150, 140 Q 220, 180 290, 145" fill="none" stroke="var(--tw-colors-primary)" stroke-width="3"></path>
+<polygon fill="var(--tw-colors-primary)" points="290,145 275,140 285,155" transform="rotate(-25 290 145)"></polygon>
+</svg>
+</div>
+</section>
+</div>
+<!-- Caption Card -->
+<div class="mx-auto mt-8 bg-surface-container-highest sketch-border px-8 py-4 transform -rotate-1 max-w-lg shadow-sm relative">
+<div class="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-4 bg-secondary-container/50 border border-on-surface transform rotate-3"></div> <!-- Tape -->
+<p class="font-source-code text-on-surface text-center italic text-lg">"Every note traces back to its source — click either side."</p>
+</div>
+</main>
+</body></html>

@@ -22,6 +22,9 @@ import {
   type QARound,
 } from "../api/viva";
 import { useWorkspaceStore } from "../store/workspaceStore";
+import SketchHeader from "../components/sketch/SketchHeader";
+import BookmarkTabs from "../components/sketch/BookmarkTabs";
+import SketchButton from "../components/sketch/SketchButton";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type Phase = "select" | "question" | "evaluating" | "feedback" | "complete";
@@ -37,10 +40,11 @@ interface ActiveSession {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+// Sketch-palette difficulty chip styles
 const DIFF_STYLE: Record<Difficulty, string> = {
-  easy:   "border-green-300 bg-green-50 text-green-700",
-  medium: "border-amber-300 bg-amber-50 text-amber-700",
-  hard:   "border-red-300 bg-red-50 text-red-700",
+  easy:   "bg-tertiary-fixed/60 text-on-tertiary-fixed",
+  medium: "bg-secondary-fixed text-on-secondary-fixed",
+  hard:   "bg-error-container text-on-error-container",
 };
 
 const RUBRIC_LABELS: Record<keyof RubricScore, string> = {
@@ -53,18 +57,25 @@ const RUBRIC_LABELS: Record<keyof RubricScore, string> = {
 
 function ScoreBar({ label, score }: { label: string; score: number }) {
   const pct = (score / 5) * 100;
-  const colour =
-    score >= 4 ? "bg-green-500" : score >= 3 ? "bg-amber-400" : "bg-red-400";
+  const barColor =
+    score >= 4 ? "#498300" : score >= 3 ? "#835500" : "#ba1a1a";
   return (
     <div className="flex items-center gap-3">
-      <span className="w-44 shrink-0 text-xs text-slate-600">{label}</span>
-      <div className="flex-1 rounded-full bg-slate-100">
+      <span className="w-44 shrink-0 font-mono text-source-code text-on-surface-variant">{label}</span>
+      <div
+        className="flex-1 h-3 bg-surface-container-lowest"
+        style={{ border: "2px solid #1c1b1b", borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px" }}
+      >
         <div
-          className={`h-2 rounded-full transition-all ${colour}`}
-          style={{ width: `${pct}%` }}
+          className="h-full transition-all"
+          style={{
+            width: `${pct}%`,
+            background: barColor,
+            backgroundImage: `repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(255,255,255,0.25) 3px, rgba(255,255,255,0.25) 6px)`,
+          }}
         />
       </div>
-      <span className="w-6 text-right text-xs font-semibold text-slate-700">
+      <span className="w-10 text-right font-mono text-source-code font-bold text-on-surface">
         {score}/5
       </span>
     </div>
@@ -88,12 +99,20 @@ function EvaluationCard({
       : "text-red-600";
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div
+      className="bg-white p-5"
+      style={{
+        border: "2px solid #1c1b1b",
+        borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+        boxShadow: "3px 3px 0px #1c1b1b",
+        transform: "rotate(-0.3deg)",
+      }}
+    >
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-800">
+        <h3 className="font-headline text-headline-sm" style={{ fontSize: "16px" }}>
           Round {round} Evaluation
         </h3>
-        <span className={`text-xl font-bold ${overallColour}`}>
+        <span className={`font-display text-headline-md ${overallColour}`}>
           {response.overall_score.toFixed(1)}/5.0
         </span>
       </div>
@@ -110,21 +129,24 @@ function EvaluationCard({
       </div>
 
       {/* Feedback */}
-      <p className="mb-3 text-sm leading-relaxed text-slate-700">
+      <p className="mb-3 font-body text-body-md text-on-surface leading-relaxed">
         {response.feedback}
       </p>
 
       {/* Missing keywords */}
       {response.missing_keywords.length > 0 && (
-        <div className="mb-3 rounded-md bg-amber-50 p-3">
-          <p className="mb-1 text-xs font-semibold text-amber-700">
-            Missing keywords / concepts:
+        <div className="mb-3 bg-secondary-fixed/40 p-3"
+          style={{ border: "1px solid #835500", borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px" }}
+        >
+          <p className="mb-2 font-label-caps text-label-caps text-secondary uppercase tracking-widest">
+            Missing keywords:
           </p>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {response.missing_keywords.map((kw) => (
               <span
                 key={kw}
-                className="rounded-full border border-amber-200 bg-white px-2 py-0.5 text-[11px] font-medium text-amber-700"
+                className="bg-white font-mono text-source-code text-secondary px-2 py-0.5"
+                style={{ border: "1px solid #835500", borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px" }}
               >
                 {kw}
               </span>
@@ -137,17 +159,19 @@ function EvaluationCard({
       {response.source_page != null && (
         <button
           onClick={() => onReviewSource(response.source_page!)}
-          className="text-xs font-medium text-indigo-600 hover:underline"
+          className="font-label-caps text-label-caps text-primary hover:underline"
+          style={{ fontSize: "11px" }}
         >
           ↗ Review source (page {response.source_page})
         </button>
       )}
 
       {/* Difficulty badge */}
-      <div className="mt-3 text-[11px] text-slate-400">
-        Next difficulty:{" "}
+      <div className="mt-3 flex items-center gap-2">
+        <span className="font-mono text-source-code text-on-surface-variant">Next difficulty:</span>
         <span
-          className={`rounded-full border px-2 py-0.5 font-semibold ${DIFF_STYLE[response.next_difficulty]}`}
+          className={`font-label-caps text-label-caps px-2 py-0.5 ${DIFF_STYLE[response.next_difficulty]}`}
+          style={{ border: "1px solid #1c1b1b", borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px" }}
         >
           {response.next_difficulty}
         </span>
@@ -301,68 +325,74 @@ export default function VivaSimulator() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-slate-500">
-        Loading…
+      <div className="flex min-h-screen items-center justify-center bg-checkered">
+        <div className="text-center">
+          <span className="material-symbols-outlined text-5xl text-primary animate-spin" style={{ animationDuration: "2s" }}>autorenew</span>
+          <p className="font-headline text-headline-sm mt-4 text-on-surface-variant">Loading viva simulator...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950">
-      {/* Header */}
-      <header className="border-b border-slate-700 bg-slate-900/80 px-6 py-4 backdrop-blur">
-        <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-checkered text-on-surface font-body">
+      <SketchHeader />
+      <BookmarkTabs documentId={id!} status={doc?.status} />
+
+      <div className="mx-auto max-w-3xl px-4 pt-28 pb-16 pr-20 md:pr-28">
+
+        {/* Back + title */}
+        <div className="mb-6 flex items-start justify-between">
           <div>
-            <Link
-              to={`/documents/${id}`}
-              className="text-sm text-indigo-400 hover:underline"
-            >
-              &larr; Back to workspace
+            <Link to={`/documents/${id}`} className="font-label-caps text-label-caps text-primary hover:underline" style={{ fontSize: "11px" }}>
+              ← Back to workspace
             </Link>
-            <h1 className="mt-0.5 text-lg font-bold text-white">
-              🎓 Viva Simulator — {doc?.title ?? ""}
-            </h1>
+            <h1 className="font-display text-headline-md mt-1">🎓 Viva Simulator</h1>
+            <p className="font-mono text-source-code text-on-surface-variant">{doc?.title ?? ""}</p>
           </div>
           {session && phase !== "select" && (
-            <button
-              onClick={handleRestart}
-              className="rounded-md border border-slate-600 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800"
-            >
+            <SketchButton onClick={handleRestart} variant="ghost" size="sm">
               New Session
-            </button>
+            </SketchButton>
           )}
         </div>
-      </header>
 
-      <div className="mx-auto max-w-3xl px-4 py-8">
         {error && (
-          <div className="mb-4 rounded-lg bg-red-900/50 px-4 py-3 text-sm text-red-300">
+          <div className="mb-5 hand-drawn-border-thin bg-error-container p-3 font-body text-body-md text-on-error-container">
             {error}
           </div>
         )}
 
         {/* ── TOPIC SELECTOR ──────────────────────────────────────────── */}
         {phase === "select" && (
-          <div className="rounded-2xl border border-slate-700 bg-slate-800/70 p-8 shadow-xl backdrop-blur">
-            <h2 className="mb-2 text-xl font-bold text-white">Start a Viva</h2>
-            <p className="mb-6 text-sm text-slate-400">
-              Select a topic, then answer the AI examiner's questions. You'll
-              receive real-time rubric feedback and adaptive follow-up questions.
+          <div
+            className="bg-white p-8"
+            style={{
+              border: "3px solid #1c1b1b",
+              borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+              boxShadow: "4px 4px 0px #1c1b1b",
+              transform: "rotate(-0.5deg)",
+            }}
+          >
+            <h2 className="font-headline text-headline-sm mb-2">Start a Viva Session</h2>
+            <p className="font-body text-body-md text-on-surface-variant mb-6">
+              Select a topic, then answer the AI examiner's questions. You'll receive real-time rubric feedback and adaptive follow-up questions.
             </p>
 
             {topics.length === 0 ? (
-              <p className="text-sm text-amber-400">
+              <p className="font-body text-body-md text-secondary">
                 No topics found. Run "Segment Topics" in the workspace first.
               </p>
             ) : (
               <>
-                <label className="mb-1 block text-sm font-medium text-slate-300">
+                <label className="block font-label-caps text-label-caps text-on-surface-variant mb-2 uppercase tracking-widest">
                   Choose topic
                 </label>
                 <select
                   value={selectedTopicId}
                   onChange={(e) => setSelectedTopicId(e.target.value)}
-                  className="mb-6 w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="mb-6 w-full bg-surface-container-lowest border-2 border-on-surface px-3 py-2.5 font-body text-body-md text-on-surface focus:outline-none focus:border-primary"
+                  style={{ borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px" }}
                 >
                   {topics.map((t) => (
                     <option key={t.id} value={t.id}>
@@ -371,13 +401,15 @@ export default function VivaSimulator() {
                   ))}
                 </select>
 
-                <button
+                <SketchButton
                   onClick={handleStart}
                   disabled={busy || !selectedTopicId}
-                  className="w-full rounded-xl bg-indigo-600 py-3 text-base font-bold text-white shadow-lg hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  variant="primary"
+                  size="lg"
+                  style={{ width: "100%" }}
                 >
-                  {busy ? "Starting…" : "Begin Viva →"}
-                </button>
+                  {busy ? "Starting..." : "Begin Viva →"}
+                </SketchButton>
               </>
             )}
           </div>
@@ -385,35 +417,43 @@ export default function VivaSimulator() {
 
         {/* ── QUESTION ────────────────────────────────────────────────── */}
         {(phase === "question" || phase === "evaluating") && session && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {/* Progress + difficulty */}
             <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-400">
-                Round {session.roundIndex} / 10 &bull; Topic:{" "}
-                <span className="font-medium text-slate-200">
-                  {session.topicTitle}
-                </span>
+              <span className="font-mono text-source-code text-on-surface-variant">
+                Round {session.roundIndex} / 10 · <span className="font-bold text-on-surface">{session.topicTitle}</span>
               </span>
               <span
-                className={`rounded-full border px-3 py-0.5 text-xs font-semibold ${DIFF_STYLE[session.currentDifficulty]}`}
+                className={`font-label-caps text-label-caps px-3 py-1 ${DIFF_STYLE[session.currentDifficulty]}`}
+                style={{ border: "2px solid #1c1b1b", borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px" }}
               >
                 {session.currentDifficulty}
               </span>
             </div>
 
             {/* Question card */}
-            <div className="rounded-2xl border border-indigo-700/50 bg-indigo-900/30 p-6 shadow-xl">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-indigo-400">
+            <div
+              className="bg-primary-fixed/30 p-6"
+              style={{
+                border: "3px solid #005da7",
+                borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+                transform: "rotate(0.5deg)",
+              }}
+            >
+              <p className="font-label-caps text-label-caps text-primary uppercase tracking-widest mb-2">
                 Examiner's Question
               </p>
-              <p className="text-lg font-medium leading-relaxed text-white">
+              <p className="font-headline text-headline-sm leading-relaxed text-on-surface">
                 {session.currentQuestion}
               </p>
             </div>
 
-            {/* Answer input */}
-            <div className="rounded-xl border border-slate-700 bg-slate-800/80 p-4">
-              <label className="mb-2 block text-sm font-medium text-slate-300">
+            {/* Answer input — notebook ruled style */}
+            <div
+              className="bg-white p-5"
+              style={{ border: "2px solid #1c1b1b", borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px" }}
+            >
+              <label className="block font-label-caps text-label-caps text-on-surface-variant mb-3 uppercase tracking-widest">
                 Your Answer
               </label>
               <textarea
@@ -422,20 +462,26 @@ export default function VivaSimulator() {
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 disabled={phase === "evaluating"}
-                placeholder="Type your answer here…"
-                className="w-full resize-none rounded-lg border border-slate-600 bg-slate-700/60 p-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+                placeholder="Write your answer here..."
+                className="w-full resize-none bg-surface-container-lowest border-b-2 border-on-surface px-2 py-2 font-body text-body-md text-on-surface placeholder-on-surface-variant focus:outline-none disabled:opacity-60"
+                style={{
+                  backgroundImage: "repeating-linear-gradient(transparent, transparent 27px, #c1c7d3 27px, #c1c7d3 28px)",
+                  backgroundAttachment: "local",
+                  lineHeight: "28px",
+                }}
               />
               <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs text-slate-500">
+                <span className="font-mono text-source-code text-on-surface-variant">
                   {answer.trim().split(/\s+/).filter(Boolean).length} words
                 </span>
-                <button
+                <SketchButton
                   onClick={handleSubmitAnswer}
                   disabled={phase === "evaluating" || !answer.trim()}
-                  className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  variant="primary"
+                  size="md"
                 >
-                  {phase === "evaluating" ? "Evaluating…" : "Submit Answer →"}
-                </button>
+                  {phase === "evaluating" ? "Evaluating..." : "Submit Answer →"}
+                </SketchButton>
               </div>
             </div>
           </div>
@@ -443,7 +489,7 @@ export default function VivaSimulator() {
 
         {/* ── FEEDBACK ────────────────────────────────────────────────── */}
         {phase === "feedback" && lastResponse && session && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <EvaluationCard
               response={lastResponse}
               round={session.roundIndex - 1}
@@ -451,29 +497,34 @@ export default function VivaSimulator() {
             />
 
             {lastResponse.next_question && (
-              <div className="rounded-2xl border border-indigo-700/40 bg-indigo-900/20 p-5">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-indigo-400">
+              <div
+                className="bg-surface-container-low p-5"
+                style={{ border: "2px solid #1c1b1b", borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px", transform: "rotate(0.3deg)" }}
+              >
+                <p className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-2">
                   Next Question
                 </p>
-                <p className="text-base font-medium text-white">
+                <p className="font-headline text-headline-sm text-on-surface">
                   {lastResponse.next_question}
                 </p>
               </div>
             )}
 
-            <button
+            <SketchButton
               onClick={handleNextQuestion}
               disabled={!lastResponse.next_question}
-              className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+              variant="primary"
+              size="lg"
+              style={{ width: "100%" }}
             >
               Continue →
-            </button>
+            </SketchButton>
           </div>
         )}
 
         {/* ── COMPLETE ────────────────────────────────────────────────── */}
         {phase === "complete" && session && (
-          <div className="space-y-4">
+          <div className="space-y-5">
             {lastResponse && (
               <EvaluationCard
                 response={lastResponse}
@@ -482,23 +533,23 @@ export default function VivaSimulator() {
               />
             )}
 
-            {/* Summary */}
-            <div className="rounded-2xl border border-slate-700 bg-slate-800/70 p-6">
-              <h2 className="mb-4 text-lg font-bold text-white">
-                Session Complete 🎓
-              </h2>
+            {/* Summary card */}
+            <div
+              className="bg-white p-6"
+              style={{
+                border: "3px solid #1c1b1b",
+                borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+                boxShadow: "4px 4px 0px #1c1b1b",
+                transform: "rotate(-0.5deg)",
+              }}
+            >
+              <h2 className="font-headline text-headline-sm mb-4">Session Complete 🎓</h2>
               {session.rounds.length > 0 && (
                 <>
-                  <p className="mb-3 text-sm text-slate-400">
+                  <p className="font-body text-body-md text-on-surface-variant mb-4">
                     Average score:{" "}
-                    <span className="font-bold text-white">
-                      {(
-                        session.rounds.reduce(
-                          (s, r) => s + (r.overall_score ?? 0),
-                          0
-                        ) / session.rounds.length
-                      ).toFixed(2)}
-                      /5.0
+                    <span className="font-bold text-on-surface">
+                      {(session.rounds.reduce((s, r) => s + (r.overall_score ?? 0), 0) / session.rounds.length).toFixed(2)}/5.0
                     </span>{" "}
                     over {session.rounds.length} rounds.
                   </p>
@@ -506,22 +557,24 @@ export default function VivaSimulator() {
                     {session.rounds.map((r, i) => (
                       <div
                         key={i}
-                        className="rounded-lg border border-slate-700 bg-slate-900/50 p-3"
+                        className="bg-surface-container-low p-3"
+                        style={{ border: "1px solid #1c1b1b", borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px" }}
                       >
                         <div className="mb-1 flex items-center justify-between">
-                          <span className="text-xs text-slate-400">
+                          <span className="font-mono text-source-code text-on-surface-variant">
                             Round {i + 1} ·{" "}
                             <span
-                              className={`font-medium ${DIFF_STYLE[r.difficulty].split(" ")[2]}`}
+                              className={`font-label-caps text-label-caps px-1.5 py-0.5 ${DIFF_STYLE[r.difficulty]}`}
+                              style={{ borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px", border: "1px solid #1c1b1b" }}
                             >
                               {r.difficulty}
                             </span>
                           </span>
-                          <span className="text-xs font-bold text-white">
+                          <span className="font-mono text-source-code font-bold text-on-surface">
                             {r.overall_score?.toFixed(1)}/5
                           </span>
                         </div>
-                        <p className="text-xs text-slate-300 line-clamp-2">
+                        <p className="font-body text-body-md text-on-surface-variant line-clamp-2">
                           Q: {r.question}
                         </p>
                       </div>
@@ -530,12 +583,14 @@ export default function VivaSimulator() {
                 </>
               )}
 
-              <button
+              <SketchButton
                 onClick={handleRestart}
-                className="mt-5 w-full rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white hover:bg-indigo-700"
+                variant="primary"
+                size="lg"
+                style={{ marginTop: "20px", width: "100%" }}
               >
                 Start a New Viva
-              </button>
+              </SketchButton>
             </div>
           </div>
         )}

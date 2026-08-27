@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>pradeepLLM - Loading</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=JetBrains+Mono:wght@400;700&amp;family=Karla:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#87dc2c",
+                        "on-tertiary-fixed": "#0e2000",
+                        "on-surface-variant": "#414751",
+                        "primary-fixed": "#d4e3ff",
+                        "secondary": "#835500",
+                        "on-background": "#1c1b1b",
+                        "tertiary": "#386800",
+                        "on-primary-fixed-variant": "#004883",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#fdfcff",
+                        "surface-dim": "#dcd9d9",
+                        "secondary-container": "#feae2c",
+                        "secondary-fixed": "#ffddb4",
+                        "surface-tint": "#0060ac",
+                        "surface-container-high": "#eae7e7",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f3f0ef",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#a4c9ff",
+                        "on-secondary-container": "#6b4500",
+                        "on-tertiary-fixed-variant": "#2a5000",
+                        "surface-container-highest": "#e5e2e1",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#291800",
+                        "secondary-fixed-dim": "#ffb955",
+                        "surface-container": "#f0eded",
+                        "surface-bright": "#fcf9f8",
+                        "primary-container": "#2976c7",
+                        "surface": "#fcf9f8",
+                        "background": "#fcf9f8",
+                        "tertiary-container": "#498300",
+                        "surface-variant": "#e5e2e1",
+                        "on-secondary": "#ffffff",
+                        "surface-container-low": "#f6f3f2",
+                        "on-tertiary-container": "#f9ffeb",
+                        "on-primary-fixed": "#001c39",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-surface": "#1c1b1b",
+                        "tertiary-fixed": "#a1fa49",
+                        "outline": "#717783",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "on-error-container": "#93000a",
+                        "primary": "#005da7",
+                        "inverse-surface": "#313030",
+                        "outline-variant": "#c1c7d3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "unit": "4px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "gutter": "16px",
+                        "margin-mobile": "16px",
+                        "xl": "40px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Karla"],
+                        "headline-sm": ["Bricolage Grotesque"],
+                        "display-lg": ["Bricolage Grotesque"],
+                        "source-code": ["JetBrains Mono"],
+                        "body-lg": ["Karla"],
+                        "headline-md": ["Bricolage Grotesque"],
+                        "label-caps": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "source-code": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #fcf9f8;
+            background-image: radial-gradient(#dcd9d9 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .wobbly-border {
+            border: 2px solid #1c1b1b;
+            border-radius: 4px 8px 3px 6px / 6px 3px 8px 4px;
+        }
+        .wobbly-border-thick {
+            border: 3px solid #1c1b1b;
+            border-radius: 8px 4px 6px 3px / 4px 7px 3px 8px;
+        }
+        .torn-bottom {
+            border-bottom: 2px dashed #717783;
+        }
+        .hand-drawn-triangle {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-color: #1c1b1b transparent transparent #1c1b1b;
+        }
+        .scribble-fill {
+            background: repeating-linear-gradient(
+                45deg,
+                #005da7,
+                #005da7 2px,
+                transparent 2px,
+                transparent 4px
+            );
+        }
+        @keyframes doodleSpin {
+            0% { transform: rotate(0deg); border-radius: 50% 40% 60% 45%; }
+            25% { transform: rotate(90deg); border-radius: 45% 55% 40% 60%; }
+            50% { transform: rotate(180deg); border-radius: 60% 45% 50% 40%; }
+            75% { transform: rotate(270deg); border-radius: 40% 60% 45% 55%; }
+            100% { transform: rotate(360deg); border-radius: 50% 40% 60% 45%; }
+        }
+        .spinner-doodle {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #1c1b1b;
+            border-top-color: transparent;
+            animation: doodleSpin 1.5s linear infinite;
+        }
+        .floating-element {
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(var(--rot, 2deg)); }
+            50% { transform: translateY(-10px) rotate(calc(var(--rot, 2deg) * -1)); }
+            100% { transform: translateY(0px) rotate(var(--rot, 2deg)); }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-on-surface font-body-md overflow-hidden flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full h-20 flex items-center justify-between px-margin-desktop fixed top-0 left-0 z-50 bg-surface border-b-2 border-on-surface-variant">
+<div class="flex items-center gap-4">
+<img alt="pradeepLLM Logo" class="h-12 w-12 object-contain wobbly-border p-1" src="https://lh3.googleusercontent.com/aida/AEtjO1VaCkQm5JlHleSE2gjYdd3pHw3dIUq4LSnBzUDkj4BPdYTggoo69rrpSv1qwsDZ87fDaLaQPCq_nQvQDnK_Ww3LsnYKsyQjfHVLfWXcedpn_qmibbaROv-v-hPT-rzrpyz7uWcUzIDAvssAsXgJxirJpWSoVUCbz4pc0uVkZtdn99amffL5e2PT535UmBKNmgoafjSRBLMq0m0NxGo4CsI1u7HHYBNTvQCF4CwA24hGoD70mwoqs_ssN0Sd"/>
+<h1 class="font-headline-md text-headline-md text-primary">Marginalia</h1>
+</div>
+<button class="wobbly-border p-2 hover:bg-primary-container/10 transition-colors">
+<span class="material-symbols-outlined text-[32px] text-on-surface">account_circle</span>
+</button>
+</header>
+<!-- SideNavBar (Greyed out for loading) -->
+<nav class="fixed right-0 top-24 w-24 flex flex-col gap-4 z-40 items-end opacity-50 grayscale pointer-events-none">
+<!-- Labels from JSON -->
+<div class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface flex flex-col items-center gap-1 w-20">
+<span class="material-symbols-outlined">edit_note</span>
+<span class="font-label-caps text-[10px]">Notes</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface flex flex-col items-center gap-1 w-20">
+<span class="material-symbols-outlined">local_fire_department</span>
+<span class="font-label-caps text-[10px]">Heatmap</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface flex flex-col items-center gap-1 w-20">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span class="font-label-caps text-[10px]">Exam Essentials</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface flex flex-col items-center gap-1 w-20">
+<span class="material-symbols-outlined">hub</span>
+<span class="font-label-caps text-[10px]">Knowledge Graph</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface flex flex-col items-center gap-1 w-20">
+<span class="material-symbols-outlined">record_voice_over</span>
+<span class="font-label-caps text-[10px]">Viva</span>
+</div>
+<div class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface flex flex-col items-center gap-1 w-20">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-caps text-[10px]">Search</span>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-grow flex items-center justify-center relative mt-20 pr-32 pb-8">
+<!-- Floating PDF Thumbnails -->
+<div class="absolute top-20 left-32 w-24 h-32 bg-surface wobbly-border flex items-center justify-center floating-element" style="--rot: -5deg;">
+<div class="w-16 h-24 border border-outline-variant flex flex-col gap-1 p-2">
+<div class="h-2 w-full bg-surface-dim"></div>
+<div class="h-2 w-3/4 bg-surface-dim"></div>
+<div class="h-2 w-full bg-surface-dim"></div>
+</div>
+<span class="absolute -bottom-3 -right-3 font-source-code text-xs bg-secondary-fixed text-on-secondary-fixed px-2 py-1 wobbly-border transform rotate-6">p.12</span>
+</div>
+<div class="absolute bottom-32 left-48 w-20 h-28 bg-surface wobbly-border flex items-center justify-center floating-element" style="--rot: 8deg; animation-delay: 1s;">
+<div class="w-12 h-20 border border-outline-variant flex flex-col gap-1 p-2">
+<div class="h-2 w-full bg-surface-dim"></div>
+<div class="h-2 w-full bg-surface-dim"></div>
+</div>
+<span class="absolute -top-3 -left-3 font-source-code text-xs bg-tertiary-fixed text-on-tertiary-fixed px-2 py-1 wobbly-border transform -rotate-12">p.15</span>
+</div>
+<div class="absolute top-32 right-64 w-28 h-36 bg-surface wobbly-border flex items-center justify-center floating-element" style="--rot: 3deg; animation-delay: 2s;">
+<div class="w-20 h-28 border border-outline-variant flex flex-col gap-1 p-2">
+<div class="h-8 w-full bg-surface-dim mb-2"></div>
+<div class="h-2 w-full bg-surface-dim"></div>
+<div class="h-2 w-2/3 bg-surface-dim"></div>
+</div>
+<span class="absolute -bottom-2 -left-4 font-source-code text-xs bg-primary-fixed text-on-primary-fixed px-2 py-1 wobbly-border transform -rotate-3">p.14</span>
+</div>
+<!-- Center Card -->
+<div class="relative w-full max-w-2xl bg-surface p-12 wobbly-border-thick shadow-none transform rotate-1 flex flex-col items-center justify-center gap-8 torn-bottom border-b-[4px]">
+<!-- Corner flourishes -->
+<div class="hand-drawn-triangle top-0 left-0 border-width-[10px] transform -translate-x-1 -translate-y-1"></div>
+<div class="hand-drawn-triangle top-0 right-0 border-width-[10px] transform rotate-90 translate-x-1 -translate-y-1"></div>
+<!-- Spinner -->
+<div class="spinner-doodle"></div>
+<!-- Status Text -->
+<h2 class="font-headline-sm text-headline-sm text-on-surface text-center">
+                Reading page 14 of 82...
+            </h2>
+<!-- Progress Bar -->
+<div class="w-full max-w-md relative">
+<div class="font-source-code text-on-surface text-lg flex items-center justify-between absolute -top-8 w-full">
+<span>[</span>
+<span>]</span>
+</div>
+<div class="w-full h-8 wobbly-border overflow-hidden relative bg-surface-container">
+<div class="absolute top-0 left-0 h-full w-[45%] scribble-fill"></div>
+</div>
+<div class="font-source-code text-xs text-outline mt-2 text-center w-full block">|||||||      </div>
+</div>
+<!-- Annotation -->
+<div class="absolute -bottom-6 right-12 transform rotate-3">
+<p class="font-source-code text-error text-sm">
+                    * this usually takes a minute for big chapters
+                </p>
+<!-- Hand drawn arrow -->
+<svg class="absolute -top-10 -left-8 stroke-error fill-none transform -rotate-45" height="40" style="stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;" viewbox="0 0 100 100" width="40">
+<path d="M 20 80 Q 50 20 80 20 M 60 15 L 80 20 L 75 40"></path>
+</svg>
+</div>
+</div>
+</main>
+</body></html>

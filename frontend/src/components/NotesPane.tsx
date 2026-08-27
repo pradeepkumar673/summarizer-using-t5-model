@@ -6,11 +6,11 @@ import { logActivity } from "../api/activity";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { buildChunkIndex, resolveNoteHighlights } from "../lib/highlights";
 
-const NOTE_LEVELS: { value: NoteLevel; label: string }[] = [
-  { value: "paragraph", label: "Paragraph" },
-  { value: "topic", label: "Topic" },
-  { value: "page", label: "Page" },
-  { value: "chapter", label: "Chapter" },
+const NOTE_LEVELS: { value: NoteLevel; label: string; icon: string }[] = [
+  { value: "paragraph", label: "¶ Para", icon: "subject" },
+  { value: "topic",     label: "§ Topic", icon: "category" },
+  { value: "page",      label: "📄 Page", icon: "article" },
+  { value: "chapter",   label: "📖 Chap", icon: "menu_book" },
 ];
 
 interface NotesPaneProps {
@@ -52,13 +52,12 @@ export default function NotesPane({
 
   function handleNoteClick(note: NotePublic) {
     activateNote(note.id, resolveNoteHighlights(note, chunkIndex));
-    // Log note_click for each source paragraph
     if (note.paragraph_id != null) {
       logActivity(documentId, note.paragraph_id, "note_click");
     } else {
       note.source_chunk_ids.forEach(() => {
         if (note.paragraph_id != null)
-          logActivity(documentId, note.paragraph_id, "note_click");
+          logActivity(documentId, note.paragraph_id!, "note_click");
       });
     }
   }
@@ -108,82 +107,115 @@ export default function NotesPane({
   }
 
   return (
-    <div className="flex h-full flex-col border-l bg-white">
-      <div className="flex items-center justify-between border-b px-3 py-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+    <div className="flex h-full flex-col bg-surface-container-low border-l-2 border-on-surface">
+
+      {/* Header */}
+      <div className="shrink-0 flex items-center justify-between border-b-2 border-on-surface px-4 py-3 bg-surface">
+        <h2 className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">
           Notes {notes.length > 0 && `(${notes.length})`}
         </h2>
         <Link
           to={`/documents/${documentId}/notebook`}
-          className="text-xs font-medium text-indigo-600 hover:underline"
+          className="font-label-caps text-label-caps text-primary hover:underline underline-offset-2"
+          style={{ fontSize: "10px" }}
         >
-          My Notebook &rarr;
+          My Notebook →
         </Link>
       </div>
 
-      <div className="flex gap-1 border-b bg-slate-50 p-2">
-        {NOTE_LEVELS.map((l) => (
-          <button
-            key={l.value}
-            onClick={() => onNoteLevelChange(l.value)}
-            className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
-              noteLevel === l.value
-                ? "bg-white text-slate-900 shadow-sm ring-1 ring-slate-200"
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            {l.label}
-          </button>
-        ))}
+      {/* Level tabs — bookmark ribbon style */}
+      <div className="shrink-0 flex border-b-2 border-on-surface bg-surface-container">
+        {NOTE_LEVELS.map((l, i) => {
+          const active = noteLevel === l.value;
+          return (
+            <button
+              key={l.value}
+              onClick={() => onNoteLevelChange(l.value)}
+              className={`flex-1 py-2 px-1 font-label-caps text-label-caps transition-colors border-r-2 border-on-surface last:border-r-0 ${
+                active
+                  ? "bg-secondary-container text-on-secondary-container"
+                  : "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
+              }`}
+              style={{
+                fontSize: "9px",
+                transform: active ? "none" : `rotate(${[0.5, -0.5, 0.5, -0.5][i]}deg)`,
+              }}
+            >
+              {l.label}
+            </button>
+          );
+        })}
       </div>
 
       {saveError && (
-        <div className="border-b bg-red-50 px-3 py-2 text-xs text-red-700">{saveError}</div>
+        <div className="shrink-0 bg-error-container border-b-2 border-on-surface px-3 py-2 font-body text-body-md text-on-error-container text-sm">
+          {saveError}
+        </div>
       )}
 
+      {/* Notes list */}
       <div className="flex-1 overflow-auto p-3">
         {notesLoading ? (
-          <p className="text-sm text-slate-400">Loading {noteLevel} notes...</p>
+          <div className="flex items-center gap-2 py-6">
+            <span className="material-symbols-outlined text-primary animate-spin" style={{ animationDuration: "1.5s" }}>
+              autorenew
+            </span>
+            <span className="font-body text-body-md text-on-surface-variant">Loading {noteLevel} notes...</span>
+          </div>
         ) : notes.length === 0 ? (
-          <p className="text-sm text-slate-400">
-            {noteLevel === "paragraph"
-              ? 'No notes yet. Click "Generate Notes" above.'
-              : `No ${noteLevel}-level notes yet. Generate paragraph notes first, then build the roll-up.`}
-          </p>
+          <div className="py-8 text-center">
+            <span className="material-symbols-outlined text-4xl text-on-surface-variant">edit_note</span>
+            <p className="font-body text-body-md text-on-surface-variant mt-2">
+              {noteLevel === "paragraph"
+                ? 'No notes yet. Click "Generate Notes" above.'
+                : `No ${noteLevel}-level notes yet. Generate paragraph notes first, then build the roll-up.`}
+            </p>
+          </div>
         ) : (
           <ul className="space-y-3">
-            {notes.map((n) => {
+            {notes.map((n, i) => {
               const active = n.id === activeNoteId;
               const editing = editingNoteId === n.id;
               const hasEdit = Boolean(n.edited_text);
               return (
                 <li
                   key={n.id}
-                  ref={(node) => {
-                    noteRefs.current[n.id] = node;
-                  }}
+                  ref={(node) => { noteRefs.current[n.id] = node; }}
                   onClick={() => !editing && handleNoteClick(n)}
-                  className={`rounded-lg border p-3 shadow-sm transition-all ${
+                  className={`relative p-3 transition-all ${
                     editing ? "cursor-default" : "cursor-pointer"
                   } ${
                     active
-                      ? "border-yellow-400 bg-yellow-50 ring-2 ring-yellow-300"
-                      : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40"
+                      ? "hand-drawn-border bg-secondary-fixed shadow-sketch-sm"
+                      : "hand-drawn-border-thin bg-white hover:bg-primary-fixed/20"
                   }`}
+                  style={{ transform: `rotate(${i % 2 === 0 ? "0.3" : "-0.3"}deg)` }}
                 >
-                  <div className="mb-1 flex items-center justify-between gap-2">
+                  {/* Top row: badges + actions */}
+                  <div className="mb-2 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1">
                       {hasEdit && (
-                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                        <span
+                          className="font-label-caps text-label-caps bg-tertiary-fixed text-on-tertiary-fixed px-1.5 py-0.5"
+                          style={{
+                            fontSize: "8px",
+                            borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+                            border: "1px solid #1c1b1b",
+                          }}
+                        >
                           Edited
                         </span>
+                      )}
+                      {n.is_pinned && (
+                        <span className="text-secondary text-sm" title="Pinned to notebook">★</span>
                       )}
                     </div>
                     <div className="flex items-center gap-1">
                       {!editing && (
                         <button
                           onClick={(e) => startEdit(e, n)}
-                          className="rounded px-1.5 py-0.5 text-xs text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          className="hand-drawn-border-thin bg-white px-2 py-0.5 font-label-caps text-label-caps hover:bg-surface-container transition-colors"
+                          style={{ fontSize: "9px" }}
                         >
                           Edit
                         </button>
@@ -191,37 +223,41 @@ export default function NotesPane({
                       <button
                         onClick={(e) => togglePin(e, n)}
                         title={n.is_pinned ? "Unpin from notebook" : "Pin to notebook"}
-                        className={`rounded px-1.5 py-0.5 text-xs ${
+                        className={`font-label-caps text-label-caps px-2 py-0.5 transition-colors hand-drawn-border-thin ${
                           n.is_pinned
-                            ? "text-amber-500 hover:bg-amber-50 font-medium"
-                            : "text-slate-300 hover:bg-slate-100 hover:text-slate-500"
+                            ? "bg-secondary-fixed text-on-secondary-fixed"
+                            : "bg-white text-on-surface-variant hover:bg-secondary-fixed/30"
                         }`}
+                        style={{ fontSize: "9px" }}
                       >
-                        {n.is_pinned ? "Pinned" : "Pin"}
+                        {n.is_pinned ? "★ Pinned" : "☆ Pin"}
                       </button>
                     </div>
                   </div>
 
+                  {/* Note content */}
                   {editing ? (
                     <div onClick={(e) => e.stopPropagation()} className="space-y-2">
                       <textarea
                         value={draftText}
                         onChange={(e) => setDraftText(e.target.value)}
-                        rows={3}
+                        rows={4}
                         autoFocus
-                        className="w-full rounded-md border border-slate-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full bg-surface-container-lowest border-2 border-on-surface p-2 font-body text-body-md focus:outline-none focus:border-primary resize-none"
                       />
                       <div className="flex justify-end gap-2">
                         <button
-                          onClick={(e) => cancelEdit(e)}
-                          className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                          onClick={cancelEdit}
+                          className="hand-drawn-border-thin bg-white px-3 py-1 font-label-caps text-label-caps hover:bg-surface-container transition-colors"
+                          style={{ fontSize: "10px" }}
                         >
                           Cancel
                         </button>
                         <button
                           onClick={(e) => saveEdit(e, n)}
                           disabled={savingId === n.id}
-                          className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                          className="hand-drawn-border bg-primary text-on-primary px-3 py-1 font-label-caps text-label-caps hover:bg-primary/80 disabled:opacity-50 transition-colors"
+                          style={{ fontSize: "10px" }}
                         >
                           {savingId === n.id ? "Saving..." : "Save"}
                         </button>
@@ -229,23 +265,24 @@ export default function NotesPane({
                     </div>
                   ) : (
                     <>
-                      <p className="text-sm text-slate-800">{n.edited_text ?? n.text}</p>
+                      <p className="font-body text-body-md text-on-surface leading-relaxed">
+                        {n.edited_text ?? n.text}
+                      </p>
                       {hasEdit && (
-                        <p className="mt-1 text-xs italic text-slate-400">
-                          Original AI summary: {n.text}
+                        <p className="mt-1 font-mono text-source-code text-on-surface-variant italic">
+                          Original: {n.text}
                         </p>
                       )}
                     </>
                   )}
 
-                  <p className="mt-2 text-xs text-slate-400">
+                  {/* Source info */}
+                  <p className="mt-2 font-mono text-source-code text-on-surface-variant">
                     {n.source_pages.length === 1
-                      ? `Page ${n.source_pages[0]}`
-                      : `Pages ${n.source_pages[0]}&ndash;${n.source_pages[n.source_pages.length - 1]}`}
-                    {n.paragraph_id !== null && ` &bull; paragraph #${n.paragraph_id}`}
-                    {" &bull; "}
-                    from {n.source_chunk_ids.length} paragraph
-                    {n.source_chunk_ids.length === 1 ? "" : "s"}
+                      ? `p.${n.source_pages[0]}`
+                      : `p.${n.source_pages[0]}–${n.source_pages[n.source_pages.length - 1]}`}
+                    {n.paragraph_id !== null && ` · ¶${n.paragraph_id}`}
+                    {` · ${n.source_chunk_ids.length} chunk${n.source_chunk_ids.length === 1 ? "" : "s"}`}
                   </p>
                 </li>
               );

@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
+import BookmarkTabs from "../components/sketch/BookmarkTabs";
 import {
   ReactFlow,
   Background,
@@ -78,13 +79,14 @@ function buildFlowElements(
       style: {
         background: t.colour,
         color: "#fff",
-        border: "2px solid rgba(255,255,255,0.3)",
-        borderRadius: 10,
+        border: "3px solid #1c1b1b",
+        borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
         padding: "8px 12px",
         fontSize: 13,
-        fontWeight: 600,
+        fontWeight: 700,
         width: TOPIC_W,
-        boxShadow: "0 4px 14px rgba(0,0,0,0.25)",
+        boxShadow: "3px 3px 0px #1c1b1b",
+        fontFamily: "Bricolage Grotesque, sans-serif",
       },
       sourcePosition: "right" as any,
       targetPosition: "left" as any,
@@ -105,14 +107,15 @@ function buildFlowElements(
       style: {
         background: e.colour,
         color: "#fff",
-        border: "1.5px solid rgba(255,255,255,0.25)",
-        borderRadius: 8,
+        border: "2px solid #1c1b1b",
+        borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
         padding: "6px 10px",
         fontSize: 11,
         width: ESS_W,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+        boxShadow: "2px 2px 0px #1c1b1b",
         whiteSpace: "normal",
         wordBreak: "break-word",
+        fontFamily: "Karla, sans-serif",
       },
       sourcePosition: "right" as any,
       targetPosition: "left" as any,
@@ -128,20 +131,20 @@ function buildFlowElements(
       source: e.source,
       target: e.target,
       label: e.label,
-      labelStyle: { fontSize: 10, fill: "#64748b" },
-      labelBgStyle: { fill: "#f8fafc", fillOpacity: 0.85 },
+      labelStyle: { fontSize: 10, fill: "#414751", fontFamily: "JetBrains Mono, monospace" },
+      labelBgStyle: { fill: "#fcf9f8", fillOpacity: 0.9 },
       animated: isLeadsTo,
       type: isRelated ? "straight" : "smoothstep",
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: isLeadsTo ? "#6366f1" : isRelated ? "#94a3b8" : "#64748b",
+        color: isLeadsTo ? "#005da7" : isRelated ? "#717783" : "#1c1b1b",
         width: 16,
         height: 16,
       },
       style: {
-        stroke: isLeadsTo ? "#6366f1" : isRelated ? "#cbd5e1" : "#94a3b8",
+        stroke: isLeadsTo ? "#005da7" : isRelated ? "#717783" : "#1c1b1b",
         strokeWidth: isLeadsTo ? 2.5 : 1.5,
-        strokeDasharray: isRelated ? "5,4" : undefined,
+        strokeDasharray: isRelated ? "6,4" : isLeadsTo ? undefined : "3,3",
       },
       data: { rawEdge: e },
     };
@@ -152,31 +155,42 @@ function buildFlowElements(
 
 // ── Legend component ─────────────────────────────────────────────────────────
 const LEGEND_ITEMS: { colour: string; label: string }[] = [
-  { colour: "#6366f1", label: "Topic" },
-  { colour: "#3b82f6", label: "Definition" },
-  { colour: "#8b5cf6", label: "Formula" },
-  { colour: "#14b8a6", label: "Unit" },
-  { colour: "#f59e0b", label: "Rule" },
-  { colour: "#22c55e", label: "Example" },
-  { colour: "#ef4444", label: "Exception" },
+  { colour: "#005da7", label: "Topic" },
+  { colour: "#2976c7", label: "Definition" },
+  { colour: "#835500", label: "Formula" },
+  { colour: "#386800", label: "Unit" },
+  { colour: "#feae2c", label: "Rule" },
+  { colour: "#498300", label: "Example" },
+  { colour: "#ba1a1a", label: "Exception" },
 ];
 
 function Legend() {
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white/90 px-3 py-2 text-[11px] shadow backdrop-blur">
+    <div
+      className="flex flex-wrap items-center gap-3 bg-surface px-4 py-2"
+      style={{
+        border: "2px solid #1c1b1b",
+        borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+        boxShadow: "2px 2px 0px #1c1b1b",
+      }}
+    >
       {LEGEND_ITEMS.map((item) => (
         <span key={item.label} className="flex items-center gap-1.5">
           <span
-            className="inline-block h-3 w-3 rounded-sm"
-            style={{ background: item.colour }}
+            className="inline-block h-3.5 w-3.5"
+            style={{
+              background: item.colour,
+              border: "1.5px solid #1c1b1b",
+              borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px",
+            }}
           />
-          <span className="font-medium text-slate-700">{item.label}</span>
+          <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "10px", color: "#1c1b1b", fontWeight: 700 }}>
+            {item.label}
+          </span>
         </span>
       ))}
-      <span className="ml-2 border-l border-slate-200 pl-2 text-slate-400">
-        ── contains &nbsp;|&nbsp;
-        <span className="text-indigo-500">⟶ leads to</span>&nbsp;|&nbsp;
-        <span className="text-slate-400">- - related</span>
+      <span style={{ marginLeft: "8px", borderLeft: "1px solid #c1c7d3", paddingLeft: "8px", fontFamily: "JetBrains Mono, monospace", fontSize: "9px", color: "#414751" }}>
+        ── contains | <span style={{ color: "#005da7" }}>⟶ leads to</span> | - - related
       </span>
     </div>
   );
@@ -288,65 +302,70 @@ export default function KnowledgeGraph() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-slate-500">
-        Loading knowledge graph…
+      <div className="flex min-h-screen items-center justify-center bg-checkered">
+        <div className="text-center">
+          <span className="material-symbols-outlined text-5xl text-primary animate-spin" style={{ animationDuration: "2s" }}>autorenew</span>
+          <p className="mt-4" style={{ fontFamily: "Bricolage Grotesque, sans-serif", fontSize: "24px", color: "#414751" }}>Loading knowledge graph...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen flex-col bg-slate-900">
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 bg-slate-800 px-6 py-3">
+    <div className="flex h-screen flex-col bg-surface">
+      {/* ── Sketch Header ──────────────────────────────────────────────── */}
+      <header className="shrink-0 bg-surface border-b-2 border-on-surface px-6 py-3 flex flex-wrap items-center justify-between gap-3 z-30">
         <div>
           <Link
             to={`/documents/${id}`}
-            className="text-sm text-indigo-400 hover:underline"
+            className="font-label-caps text-label-caps text-primary hover:underline"
+            style={{ fontSize: "11px" }}
           >
-            &larr; Back to workspace
+            ← Back to workspace
           </Link>
-          <h1 className="mt-0.5 text-lg font-semibold text-white">
+          <h1 className="font-headline text-headline-sm mt-0.5">
             Knowledge Graph — {doc?.title ?? ""}
           </h1>
-          <p className="text-xs text-slate-400">
-            {totalNodes} nodes &bull; {totalEdges} edges
-            {totalNodes === 0 && " · Click 'Build Graph' to generate"}
+          <p className="font-mono text-source-code text-on-surface-variant">
+            {totalNodes} nodes · {totalEdges} edges
+            {totalNodes === 0 && " · click 'Build Graph' to generate"}
           </p>
         </div>
         <button
           onClick={handleGenerate}
           disabled={generating}
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="hand-drawn-border bg-white px-5 py-2 font-label-caps text-label-caps hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
         >
-          {generating ? "Building…" : totalNodes === 0 ? "Build Graph" : "Rebuild Graph"}
+          {generating ? "Building..." : totalNodes === 0 ? "Build Graph" : "Rebuild Graph"}
         </button>
       </header>
 
       {error && (
-        <div className="border-b border-red-900 bg-red-950 px-6 py-2 text-sm text-red-300">
+        <div className="shrink-0 bg-error-container border-b-2 border-on-surface px-6 py-2 font-body text-body-md text-on-error-container">
           {error}
         </div>
       )}
 
       {selectedInfo && (
-        <div className="border-b border-slate-700 bg-slate-800 px-6 py-1.5 text-xs text-slate-300">
+        <div className="shrink-0 bg-secondary-fixed/40 border-b-2 border-on-surface px-6 py-1.5 font-mono text-source-code text-on-surface-variant">
           ↗ {selectedInfo}
         </div>
       )}
 
-      {/* ── Graph canvas ──────────────────────────────────────────────── */}
-      <div className="flex-1">
+      {/* ── Graph canvas — cream paper background ────────────────────── */}
+      <div className="flex-1 relative">
         {totalNodes === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+          <div className="flex h-full flex-col items-center justify-center gap-4 text-center bg-checkered">
             <span className="text-6xl">🕸️</span>
-            <p className="text-slate-400">
-              No graph yet. Click{" "}
-              <strong className="text-white">Build Graph</strong> to generate
-              the knowledge graph from topics and exam essentials.
-            </p>
-            <p className="text-xs text-slate-500">
-              Requires "Segment Topics" and "Extract Key Info" to have run first.
-            </p>
+            <div className="bg-white hand-drawn-border shadow-sketch p-8 max-w-md">
+              <p className="font-headline text-headline-sm mb-2">No graph yet</p>
+              <p className="font-body text-body-md text-on-surface-variant">
+                Click <strong>Build Graph</strong> to generate the knowledge graph from topics and exam essentials.
+              </p>
+              <p className="font-mono text-source-code text-on-surface-variant mt-2">
+                Requires "Segment Topics" and "Extract Key Info" first.
+              </p>
+            </div>
           </div>
         ) : (
           <ReactFlow
@@ -360,20 +379,26 @@ export default function KnowledgeGraph() {
             fitViewOptions={{ padding: 0.15 }}
             minZoom={0.2}
             maxZoom={2.5}
-            colorMode="dark"
+            colorMode="light"
+            style={{ background: "#fcf9f8" }}
           >
-            <Background color="#334155" gap={20} />
+            <Background color="#e5e2e1" gap={20} />
             <Controls />
             <MiniMap
               nodeColor={(node) =>
-                (node.style?.background as string) ?? "#6366f1"
+                (node.style?.background as string) ?? "#005da7"
               }
-              maskColor="rgba(15,23,42,0.7)"
+              maskColor="rgba(252,249,248,0.7)"
             />
             <Panel position="bottom-left">
               <Legend />
             </Panel>
           </ReactFlow>
+        )}
+
+        {/* BookmarkTabs */}
+        {id && (
+          <BookmarkTabs documentId={id} status={doc?.status} />
         )}
       </div>
     </div>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Marginalia - Study Workspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&amp;family=JetBrains+Mono:wght@400;700&amp;family=Karla:wght@400;700&amp;family=Caveat:wght@400..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed-dim": "#a4c9ff",
+                      "on-surface": "#1c1b1b",
+                      "surface-variant": "#e5e2e1",
+                      "surface-container-low": "#f6f3f2",
+                      "surface-container-lowest": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "on-secondary-fixed": "#291800",
+                      "on-background": "#1c1b1b",
+                      "surface-container-highest": "#e5e2e1",
+                      "outline": "#717783",
+                      "secondary-fixed": "#ffddb4",
+                      "inverse-surface": "#313030",
+                      "on-tertiary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "secondary-fixed-dim": "#ffb955",
+                      "surface-tint": "#0060ac",
+                      "tertiary": "#386800",
+                      "tertiary-fixed": "#a1fa49",
+                      "secondary": "#835500",
+                      "surface-container-high": "#eae7e7",
+                      "secondary-container": "#feae2c",
+                      "surface-dim": "#dcd9d9",
+                      "tertiary-container": "#498300",
+                      "primary-fixed": "#d4e3ff",
+                      "on-surface-variant": "#414751",
+                      "primary": "#005da7",
+                      "inverse-on-surface": "#f3f0ef",
+                      "on-secondary-fixed-variant": "#633f00",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-fixed-variant": "#2a5000",
+                      "surface-container": "#f0eded",
+                      "on-primary-fixed-variant": "#004883",
+                      "outline-variant": "#c1c7d3",
+                      "background": "#fcf9f8",
+                      "on-tertiary-container": "#f9ffeb",
+                      "inverse-primary": "#a4c9ff",
+                      "on-primary": "#ffffff",
+                      "primary-container": "#2976c7",
+                      "on-tertiary-fixed": "#0e2000",
+                      "surface-bright": "#fcf9f8",
+                      "surface": "#fcf9f8",
+                      "on-error": "#ffffff",
+                      "tertiary-fixed-dim": "#87dc2c",
+                      "on-secondary-container": "#6b4500",
+                      "on-primary-container": "#fdfcff",
+                      "on-error-container": "#93000a",
+                      "on-primary-fixed": "#001c39",
+                      
+                      // Semantic Paper Colors
+                      "paper-cream": "#FAF6F0",
+                      "ink-black": "#2C2C2C",
+                      "ink-blue": "#1E4B8F",
+                      "marker-yellow": "#FFE66D",
+                      "marker-red": "#FF6B6B"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "md": "16px",
+                      "lg": "24px",
+                      "unit": "4px",
+                      "margin-mobile": "16px",
+                      "sm": "8px",
+                      "xs": "4px",
+                      "gutter": "16px",
+                      "xl": "40px",
+                      "margin-desktop": "32px"
+              },
+              "fontFamily": {
+                      "source-code": ["JetBrains Mono", "monospace"],
+                      "headline-md": ["Bricolage Grotesque", "sans-serif"],
+                      "display-lg": ["Bricolage Grotesque", "sans-serif"],
+                      "headline-sm": ["Bricolage Grotesque", "sans-serif"],
+                      "body-md": ["Karla", "sans-serif"],
+                      "label-caps": ["JetBrains Mono", "monospace"],
+                      "body-lg": ["Karla", "sans-serif"],
+                      "handwriting": ["Caveat", "cursive"]
+              },
+              "fontSize": {
+                      "source-code": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "headline-md": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                      "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                      "headline-sm": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "label-caps": ["12px", {"lineHeight": "1.0", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "handwriting-lg": ["28px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                      "handwriting-md": ["20px", {"lineHeight": "1.5", "fontWeight": "500"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        /* Custom Wobbly Borders & Notebook Utilities */
+        .wobbly-border {
+            border: 2px solid theme('colors.ink-black');
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+        }
+        .wobbly-border-b {
+            border-bottom: 2px solid theme('colors.ink-black');
+            border-radius: 0 0 255px 15px / 0 0 15px 255px;
+        }
+        
+        .torn-paper {
+            background-color: theme('colors.surface-container-lowest');
+            position: relative;
+        }
+        .torn-paper::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background: linear-gradient(135deg, transparent 33%, theme('colors.surface-container-lowest') 33%, theme('colors.surface-container-lowest') 66%, transparent 66%);
+            background-size: 15px 10px;
+        }
+
+        .highlight-yellow {
+            background: linear-gradient(104deg, rgba(255, 230, 109, 0) 0.9%, rgba(255, 230, 109, 0.8) 2.4%, rgba(255, 230, 109, 0.5) 5.8%, rgba(255, 230, 109, 0.8) 93%, rgba(255, 230, 109, 0) 96%);
+            padding: 2px 4px;
+        }
+        
+        .highlight-marker-line {
+            position: relative;
+            display: inline-block;
+        }
+        .highlight-marker-line::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -2%;
+            width: 104%;
+            height: 6px;
+            background-color: theme('colors.primary-fixed-dim');
+            border-radius: 4px;
+            z-index: -1;
+            transform: rotate(-1deg);
+        }
+
+        .notebook-bg {
+            background-color: theme('colors.paper-cream');
+            background-image: 
+                linear-gradient(rgba(44, 44, 44, 0.05) 1px, transparent 1px);
+            background-size: 100% 32px;
+            background-position: 0 40px;
+        }
+        
+        .spine-divider {
+            background: linear-gradient(to right, 
+                transparent 0%, 
+                rgba(44, 44, 44, 0.1) 20%, 
+                rgba(44, 44, 44, 0.2) 50%, 
+                rgba(44, 44, 44, 0.1) 80%, 
+                transparent 100%);
+            box-shadow: inset 2px 0 5px rgba(0,0,0,0.05), inset -2px 0 5px rgba(0,0,0,0.05);
+        }
+        
+        .hand-circle {
+            border: 2px solid theme('colors.marker-red');
+            border-radius: 50% 40% 60% 40% / 40% 50% 40% 60%;
+            padding: 4px;
+            display: inline-block;
+        }
+        
+        /* Side Nav Ribbon Adjustments */
+        .ribbon-tab {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 15% 50%);
+        }
+    </style>
+</head>
+<body class="bg-paper-cream text-ink-black min-h-screen overflow-hidden flex flex-col font-body-md antialiased notebook-bg">
+<!-- TopAppBar from JSON -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface px-8 border-b-2 border-on-surface wobbly-border-b h-20 flex items-center justify-between" style="background-color: theme('colors.paper-cream');">
+<!-- Brand -->
+<div class="flex items-center gap-4">
+<img alt="pradeepLLM Logo" class="h-12 w-12 object-contain wobbly-border p-1 bg-white" src="https://lh3.googleusercontent.com/aida/AEtjO1VaCkQm5JlHleSE2gjYdd3pHw3dIUq4LSnBzUDkj4BPdYTggoo69rrpSv1qwsDZ87fDaLaQPCq_nQvQDnK_Ww3LsnYKsyQjfHVLfWXcedpn_qmibbaROv-v-hPT-rzrpyz7uWcUzIDAvssAsXgJxirJpWSoVUCbz4pc0uVkZtdn99amffL5e2PT535UmBKNmgoafjSRBLMq0m0NxGo4CsI1u7HHYBNTvQCF4CwA24hGoD70mwoqs_ssN0Sd"/>
+<span class="font-headline-md text-headline-md text-primary tracking-tight" style="font-family: 'Bricolage Grotesque', sans-serif;">Marginalia</span>
+</div>
+<!-- Center Document Tag -->
+<div class="hidden md:flex items-center justify-center flex-1">
+<div class="bg-surface-container-lowest px-lg py-sm wobbly-border rotate-1 shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">description</span>
+<span class="font-label-caps text-label-caps uppercase text-on-surface">Unit 4 - Thermodynamics.pdf</span>
+</div>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-md">
+<button class="wobbly-border p-2 hover:bg-primary-container/10 transition-colors bg-white rounded-full flex items-center justify-center h-12 w-12 hover:-rotate-3">
+<span class="material-symbols-outlined text-on-surface" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="flex-1 flex mt-20 h-[calc(100vh-80px)] overflow-hidden relative">
+<!-- Left Panel: Original PDF (Canvas) -->
+<section class="flex-1 overflow-y-auto p-8 relative">
+<div class="max-w-2xl mx-auto bg-white p-8 wobbly-border min-h-[800px] mb-24 shadow-sm -rotate-1 transform-origin-top-left">
+<!-- PDF Content Simulation -->
+<div class="space-y-6 text-on-surface-variant font-body-lg">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-8">4.1 Introduction to Entropy</h2>
+<p>
+                        In thermodynamics, entropy is often described as a measure of disorder or randomness in a closed system. 
+                        However, a more precise definition relates to the number of microstates that correspond to a given macrostate.
+                    </p>
+<div class="relative group my-8">
+<!-- Margin Annotation Pin -->
+<div class="absolute -left-12 top-2 opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-marker-red animate-pulse" style="font-size: 24px;">push_pin</span>
+</div>
+<p class="highlight-yellow leading-relaxed text-on-surface font-medium p-2 inline-block">
+                            The Second Law of Thermodynamics states that the total entropy of an isolated system can never decrease over time, and is constant if and only if all processes are reversible. Isolated systems spontaneously evolve towards thermodynamic equilibrium, the state with maximum entropy.
+                        </p>
+</div>
+<p>
+                        This principle explains why heat flows from hot to cold bodies and why it is impossible to construct a perpetual motion machine of the second kind. The concept of entropy was introduced by Rudolf Clausius in the mid-19th century.
+                    </p>
+<div class="h-64 w-full bg-surface-container-low wobbly-border mt-8 flex items-center justify-center relative overflow-hidden">
+<span class="font-label-caps text-outline absolute top-2 left-2">Figure 4.1</span>
+<!-- Abstract illustration placeholder -->
+<div class="w-full h-full bg-cover bg-center opacity-70" data-alt="A hand-drawn style, sketchy diagram of a closed thermodynamic system with squiggly arrows showing heat transfer, rendered in black ink on a textured off-white background." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCIfloZy52MWDYRTwjQTG0hdbMS8oIPHb966CN8S1XrV2nbaInt_J3mZtz6E_rtuW-7zw9oQWLhFbGsIUYcshY_b_ia8IHg1dfDkYpZvN7sd3gw8aFVe-lN9X3sbIIUxKKs3o1YUTZpxob-4CMUcyhvRDZvq4_gnck0298t_qlYSru7z_66GDr2SQm0vTvgD0LRepmKnwF1ek9zo6SHabELNpvbcQGndWiHMB9IUGWKEIgwRBpNgtUKSQ')"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Divider (Spine) -->
+<div class="w-4 h-full spine-divider flex-shrink-0 cursor-col-resize hover:bg-surface-variant/50 transition-colors flex items-center justify-center group z-10 relative">
+<div class="h-16 w-1 bg-outline/30 rounded-full group-hover:bg-outline/60 transition-colors"></div>
+</div>
+<!-- Right Panel: Generated Notes (Notebook) -->
+<section class="flex-1 overflow-y-auto p-8 relative bg-paper-cream">
+<div class="max-w-2xl mx-auto pr-16">
+<!-- Note Header & Tabs -->
+<div class="flex justify-between items-end mb-8 border-b-2 border-outline-variant pb-4 wobbly-border-b">
+<h1 class="font-handwriting font-handwriting-lg text-ink-blue">Entropy &amp; Disorder</h1>
+<div class="flex gap-4">
+<button class="font-label-caps text-label-caps text-outline hover:text-on-surface transition-colors">Concise</button>
+<button class="font-label-caps text-label-caps text-on-surface highlight-marker-line">Detailed</button>
+<button class="font-label-caps text-label-caps text-outline hover:text-on-surface transition-colors">Simple</button>
+</div>
+</div>
+<!-- Notes Content -->
+<div class="font-handwriting font-handwriting-md text-ink-black space-y-6">
+<div class="flex items-start gap-3">
+<span class="text-primary mt-1">•</span>
+<p>Entropy = measure of a system's thermal energy per unit temperature that is unavailable for doing useful work.</p>
+</div>
+<div class="flex items-start gap-3 relative ml-4 rotate-1">
+<!-- Linked Note Indicator -->
+<div class="absolute -left-10 top-1 text-marker-red">
+<span class="material-symbols-outlined" style="font-size: 20px;">arrow_forward</span>
+</div>
+<span class="text-primary mt-1">•</span>
+<p class="hand-circle inline-block bg-white/50">
+<strong>Second Law:</strong> Total entropy of an ISOLATED system always increases over time. (Things naturally get messier).
+                        </p>
+</div>
+<div class="flex items-start gap-3">
+<span class="text-primary mt-1">•</span>
+<p>Maximum entropy = thermodynamic equilibrium (no more changes happen).</p>
+</div>
+<div class="flex items-start gap-3 mt-8 bg-primary-fixed-dim/20 p-4 wobbly-border -rotate-1">
+<span class="material-symbols-outlined text-primary-container shrink-0">lightbulb</span>
+<p class="text-primary-container">Think of it like a messy bedroom. It takes effort (work) to clean it (decrease entropy), but if left alone, it naturally gets messy again (entropy increases).</p>
+</div>
+</div>
+</div>
+<!-- Floating Action Button (Personal Note) -->
+<button class="absolute bottom-8 right-32 h-16 w-16 bg-marker-yellow text-ink-black wobbly-border flex items-center justify-center hover:scale-105 transition-transform shadow-sm hover:bg-yellow-300 z-30">
+<span class="material-symbols-outlined" style="font-size: 32px; font-variation-settings: 'wght' 700;">add</span>
+</button>
+</section>
+<!-- SideNavBar from JSON (Semantic Anchor: Notes) -->
+<nav class="fixed right-0 top-24 w-24 flex flex-col gap-4 z-40">
+<!-- Header suppressed as per strict spacing, labels only via tabs -->
+<!-- Active Tab: Notes (Matches Intent) -->
+<button class="bg-secondary text-on-secondary py-4 px-2 -mr-1 rounded-l-full border-2 border-on-surface flex flex-col items-center gap-1 hover:-translate-x-2 transition-transform duration-200 rotate-1 ribbon-tab group">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+<span class="font-label-caps text-[10px] uppercase text-center w-full truncate">Notes</span>
+</button>
+<!-- Inactive Tabs -->
+<button class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface opacity-80 flex flex-col items-center gap-1 hover:-translate-x-2 transition-transform duration-200 ribbon-tab">
+<span class="material-symbols-outlined">local_fire_department</span>
+<span class="font-label-caps text-[10px] uppercase text-center w-full truncate">Heatmap</span>
+</button>
+<button class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface opacity-80 flex flex-col items-center gap-1 hover:-translate-x-2 transition-transform duration-200 ribbon-tab">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span class="font-label-caps text-[10px] uppercase text-center w-full truncate block leading-tight">Exam Essentials</span>
+</button>
+<button class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface opacity-80 flex flex-col items-center gap-1 hover:-translate-x-2 transition-transform duration-200 ribbon-tab">
+<span class="material-symbols-outlined">hub</span>
+<span class="font-label-caps text-[10px] uppercase text-center w-full truncate block leading-tight">Knowledge Graph</span>
+</button>
+<button class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface opacity-80 flex flex-col items-center gap-1 hover:-translate-x-2 transition-transform duration-200 ribbon-tab">
+<span class="material-symbols-outlined">record_voice_over</span>
+<span class="font-label-caps text-[10px] uppercase text-center w-full truncate">Viva</span>
+</button>
+<button class="bg-secondary-container text-on-secondary-container py-3 px-2 -mr-1 rounded-l-full border-2 border-on-surface opacity-80 flex flex-col items-center gap-1 hover:-translate-x-2 transition-transform duration-200 ribbon-tab">
+<span class="material-symbols-outlined">search</span>
+<span class="font-label-caps text-[10px] uppercase text-center w-full truncate">Search</span>
+</button>
+</nav>
+</main>
+</body></html>

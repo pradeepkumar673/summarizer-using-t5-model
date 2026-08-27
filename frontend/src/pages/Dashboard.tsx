@@ -1,8 +1,20 @@
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState, useRef, type ChangeEvent, type DragEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { fetchMe, type UserPublic } from "../api/auth";
 import { listDocuments, uploadDocument, type DocumentPublic } from "../api/documents";
 import axios from "axios";
+import SketchHeader from "../components/sketch/SketchHeader";
+import SketchButton from "../components/sketch/SketchButton";
+import SketchProgress from "../components/sketch/SketchProgress";
+
+const STATUS_CHIP: Record<string, string> = {
+  ready:    "bg-tertiary-fixed-dim text-on-tertiary-fixed border-2 border-on-surface",
+  failed:   "bg-error-container text-on-error-container border-2 border-on-surface",
+  queued:   "bg-secondary-fixed text-on-secondary-fixed border-2 border-on-surface",
+  extracting: "bg-primary-fixed text-on-primary-fixed border-2 border-on-surface",
+  segmenting: "bg-primary-fixed text-on-primary-fixed border-2 border-on-surface",
+  summarizing:"bg-primary-fixed text-on-primary-fixed border-2 border-on-surface",
+};
 
 export default function Dashboard() {
   const [user, setUser] = useState<UserPublic | null>(null);
@@ -12,10 +24,10 @@ export default function Dashboard() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  
+  const [dragging, setDragging] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // Load User and Documents on mount
   useEffect(() => {
     fetchMe()
       .then(setUser)
@@ -23,7 +35,6 @@ export default function Dashboard() {
         localStorage.removeItem("access_token");
         navigate("/login");
       });
-
     loadDocs();
   }, [navigate]);
 
@@ -53,22 +64,32 @@ export default function Dashboard() {
     setFile(selected);
   }
 
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    setDragging(false);
+    const dropped = e.dataTransfer.files?.[0];
+    if (!dropped) return;
+    if (dropped.type !== "application/pdf" && !dropped.name.toLowerCase().endsWith(".pdf")) {
+      setError("Only PDF files are allowed.");
+      return;
+    }
+    setError(null);
+    setSuccess(null);
+    setFile(dropped);
+  }
+
   async function handleUpload() {
     if (!file) return;
     setUploading(true);
     setError(null);
     setSuccess(null);
     setUploadProgress(0);
-
     try {
       const doc = await uploadDocument(file, setUploadProgress);
-      setSuccess(`"${doc.title}" uploaded successfully! Starting background pipeline...`);
+      setSuccess(`"${doc.title}" uploaded! Starting pipeline...`);
       setFile(null);
       loadDocs();
-      // Redirect to the newly uploaded document viewer to track progress
-      setTimeout(() => {
-        navigate(`/documents/${doc.id}`);
-      }, 1500);
+      setTimeout(() => navigate(`/documents/${doc.id}`), 1500);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.detail) {
         setError(err.response.data.detail);
@@ -83,223 +104,186 @@ export default function Dashboard() {
   const totalPages = documents?.reduce((acc, doc) => acc + (doc.total_pages || 0), 0) || 0;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans">
-      {/* Header Navigation */}
-      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20">
-            TP
-          </div>
-          <div>
-            <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-              Traceable PDF Notes
-            </h1>
-            <p className="text-[10px] text-indigo-400 font-medium uppercase tracking-wider">Workspace Dashboard</p>
-          </div>
+    <div className="min-h-screen bg-checkered text-on-surface font-body overflow-x-hidden">
+      <SketchHeader
+        userEmail={user?.email}
+        onLogout={handleLogout}
+      />
+
+      <main className="pt-24 pb-16 px-6 md:px-8 max-w-6xl mx-auto">
+
+        {/* Welcome heading */}
+        <div className="mb-10 mt-4">
+          <h1 className="font-display text-display-lg" style={{ letterSpacing: "-0.02em" }}>
+            Study Library
+          </h1>
+          <p className="font-body text-body-lg text-on-surface-variant mt-1">
+            Upload a PDF textbook to extract notes, graphs, and exam essentials.
+          </p>
         </div>
 
-        <div className="flex items-center space-x-6">
-          {user && (
-            <div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-slate-200">{user.email}</p>
-              <p className="text-xs text-slate-500">Active Session</p>
+        {/* Stats Row */}
+        <div className="flex flex-wrap gap-4 mb-10">
+          {[
+            { label: "Uploaded Books", value: documents?.length ?? 0, color: "text-primary" },
+            { label: "Total Pages", value: totalPages, color: "text-secondary" },
+            { label: "Pipeline", value: "Active", color: "text-tertiary" },
+          ].map(({ label, value, color }, i) => (
+            <div
+              key={label}
+              className="bg-white hand-drawn-border-thin shadow-sketch-sm px-5 py-4 flex flex-col gap-1 min-w-36"
+              style={{ transform: `rotate(${[0, -1, 1][i]}deg)` }}
+            >
+              <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">{label}</span>
+              <span className={`font-display text-headline-md ${color}`}>{value}</span>
             </div>
-          )}
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg transition-all border border-slate-700"
-          >
-            Log Out
-          </button>
+          ))}
         </div>
-      </header>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 md:p-8 space-y-8">
-        
-        {/* Statistics Grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-6 flex flex-col justify-between hover:border-slate-700/80 transition-all">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Uploaded Books</span>
-            <div className="mt-2 flex items-baseline space-x-2">
-              <span className="text-3xl font-extrabold text-white">{documents?.length ?? 0}</span>
-              <span className="text-xs text-slate-500">PDF files</span>
-            </div>
-          </div>
-          
-          <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-6 flex flex-col justify-between hover:border-slate-700/80 transition-all">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Pages Processed</span>
-            <div className="mt-2 flex items-baseline space-x-2">
-              <span className="text-3xl font-extrabold text-indigo-400">{totalPages}</span>
-              <span className="text-xs text-slate-500">Pages total</span>
-            </div>
-          </div>
-
-          <div className="bg-slate-950/40 border border-slate-800/80 rounded-xl p-6 flex flex-col justify-between hover:border-slate-700/80 transition-all">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pipeline Server</span>
-            <div className="mt-2 flex items-center space-x-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-sm font-semibold text-slate-200">Connected</span>
-              <span className="text-xs text-slate-500">(Celery & Redis)</span>
-            </div>
-          </div>
-        </section>
-
-        {/* Workspace Panels */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Left Panel: Upload Zone */}
-          <section className="lg:col-span-5 space-y-6">
-            <div className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-6 space-y-6">
-              <div>
-                <h2 className="text-lg font-bold text-white">Upload Textbook</h2>
-                <p className="text-xs text-slate-400">Ingest documents into the pipeline to extract notes, graphs, and exam essentials.</p>
-              </div>
+
+          {/* Upload Panel */}
+          <section className="lg:col-span-5">
+            <div className="bg-white hand-drawn-border shadow-sketch p-6 md:p-8 relative"
+                 style={{ transform: "rotate(-0.5deg)" }}>
+              <h2 className="font-headline text-headline-sm mb-1">Upload Textbook</h2>
+              <p className="font-body text-body-md text-on-surface-variant mb-5">
+                PDF files — up to 80+ pages supported
+              </p>
 
               {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs p-3 rounded-lg">
+                <div className="mb-4 hand-drawn-border-thin bg-error-container p-3 text-on-error-container text-sm font-body">
                   {error}
                 </div>
               )}
               {success && (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs p-3 rounded-lg">
+                <div className="mb-4 hand-drawn-border-thin bg-tertiary-fixed/60 p-3 text-on-tertiary-fixed text-sm font-body">
                   {success}
                 </div>
               )}
 
-              {/* Upload Input Area */}
-              <div className="border-2 border-dashed border-slate-800 hover:border-indigo-500/50 rounded-xl p-8 text-center transition-all relative cursor-pointer bg-slate-950/20">
+              {/* Drop Zone */}
+              <div
+                className={`hand-drawn-dashed h-44 flex flex-col items-center justify-center cursor-pointer transition-colors group ${
+                  dragging ? "bg-primary-fixed/20" : "bg-surface-container-lowest hover:bg-surface-container"
+                }`}
+                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={handleDrop}
+                onClick={() => inputRef.current?.click()}
+              >
                 <input
+                  ref={inputRef}
                   type="file"
                   accept="application/pdf,.pdf"
                   onChange={handleFileChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="hidden"
                   disabled={uploading}
                 />
-                <div className="space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 mx-auto flex items-center justify-center">
-                    <svg className="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-200">
-                      {file ? "File selected!" : "Click or drag PDF here"}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">PDF file formats up to 50MB</p>
-                  </div>
-                </div>
+                <span className="material-symbols-outlined text-5xl text-primary group-hover:-translate-y-1 transition-transform mb-3">
+                  upload_file
+                </span>
+                <p className="font-headline text-headline-sm text-center">
+                  {file ? file.name : "Drop PDF here"}
+                </p>
+                <p className="font-body text-body-md text-on-surface-variant text-center mt-1">
+                  {file
+                    ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+                    : "or click to browse"}
+                </p>
               </div>
 
-              {file && (
-                <div className="bg-slate-900 border border-slate-850 p-3 rounded-lg flex items-center justify-between">
-                  <div className="truncate max-w-[80%]">
-                    <p className="text-xs font-medium text-slate-200 truncate">{file.name}</p>
-                    <p className="text-[10px] text-slate-500">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
-                  </div>
-                  <button
-                    onClick={() => setFile(null)}
-                    className="text-xs text-slate-500 hover:text-white"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
-
               {uploading && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-slate-400">
-                    <span>Uploading...</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <div className="w-full bg-slate-800 rounded-full h-2">
-                    <div
-                      className="bg-gradient-to-r from-indigo-500 to-violet-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
-                  </div>
+                <div className="mt-5">
+                  <SketchProgress value={uploadProgress} label="Uploading..." />
                 </div>
               )}
 
-              <button
-                onClick={handleUpload}
-                disabled={!file || uploading}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-xl font-semibold text-xs tracking-wide uppercase transition-all shadow-lg shadow-indigo-600/10"
-              >
-                {uploading ? `Uploading & Parsing...` : "Upload Document"}
-              </button>
+              <div className="mt-6 flex justify-end">
+                <SketchButton
+                  onClick={handleUpload}
+                  disabled={!file || uploading}
+                  variant="primary"
+                  size="lg"
+                  style={{ transform: "rotate(1deg)" }}
+                >
+                  {uploading ? "Uploading..." : "Upload Document"}
+                </SketchButton>
+              </div>
             </div>
           </section>
 
-          {/* Right Panel: Document List */}
-          <section className="lg:col-span-7 space-y-6">
-            <div className="bg-slate-950/40 border border-slate-800/80 rounded-2xl p-6 space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-lg font-bold text-white">Study Library</h2>
-                  <p className="text-xs text-slate-400">Select any active textbook to open its traceable study workspace.</p>
-                </div>
+          {/* Documents Panel */}
+          <section className="lg:col-span-7">
+            <div className="bg-white hand-drawn-border shadow-sketch p-6 md:p-8"
+                 style={{ transform: "rotate(0.5deg)" }}>
+              <div className="flex justify-between items-center mb-5">
+                <h2 className="font-headline text-headline-sm">Your Documents</h2>
+                <Link
+                  to="/upload"
+                  className="font-label-caps text-label-caps text-primary hover:underline underline-offset-2"
+                >
+                  + New Upload
+                </Link>
               </div>
 
               {!documents && (
-                <div className="text-center py-12 text-slate-500 text-sm">
+                <div className="py-12 text-center font-body text-on-surface-variant">
                   Loading your study library...
                 </div>
               )}
 
               {documents && documents.length === 0 && (
-                <div className="text-center py-12 border border-dashed border-slate-855 rounded-xl bg-slate-950/10">
-                  <p className="text-sm text-slate-400">No documents found in your library.</p>
-                  <p className="text-xs text-slate-600 mt-1">Upload a PDF textbook on the left to begin.</p>
+                <div className="py-12 hand-drawn-dashed flex flex-col items-center gap-3 bg-surface-container-lowest">
+                  <span className="material-symbols-outlined text-5xl text-on-surface-variant">menu_book</span>
+                  <p className="font-body text-body-md text-on-surface-variant">No documents yet.</p>
+                  <p className="font-body text-body-md text-on-surface-variant text-sm">Upload a PDF on the left to begin.</p>
                 </div>
               )}
 
               {documents && documents.length > 0 && (
-                <div className="space-y-4">
-                  {documents.map((doc) => (
-                    <div
+                <ul className="space-y-4">
+                  {documents.map((doc, i) => (
+                    <li
                       key={doc.id}
-                      className="border border-slate-850 bg-slate-950/20 hover:bg-slate-950/40 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all hover:border-slate-800"
+                      className="bg-surface-container-low hand-drawn-border-thin p-4 flex items-center justify-between gap-4 hover:bg-surface-container transition-colors"
+                      style={{ transform: `rotate(${i % 2 === 0 ? "0.3" : "-0.3"}deg)` }}
                     >
-                      <div className="space-y-1 truncate max-w-xs md:max-w-md">
+                      <div className="flex-1 truncate">
                         <Link
                           to={`/documents/${doc.id}`}
-                          className="font-semibold text-sm text-slate-200 hover:text-indigo-400 transition-colors truncate block"
+                          className="font-headline text-headline-sm hover:text-primary transition-colors truncate block"
+                          style={{ fontSize: "16px" }}
                         >
                           {doc.title}
                         </Link>
-                        <div className="flex items-center space-x-3 text-xs text-slate-500">
-                          <span>{doc.total_pages} page{doc.total_pages !== 1 ? "s" : ""}</span>
-                          <span>•</span>
-                          <span>{new Date(doc.upload_date).toLocaleDateString()}</span>
-                        </div>
+                        <p className="font-mono text-source-code text-on-surface-variant mt-0.5">
+                          {doc.total_pages} pages · {new Date(doc.upload_date).toLocaleDateString()}
+                        </p>
                       </div>
 
-                      <div className="flex items-center justify-between sm:justify-end space-x-4">
-                        <span className={`text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-full ${
-                          doc.status === "ready"
-                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                            : doc.status === "failed"
-                            ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                            : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                        }`}>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span
+                          className={`font-label-caps text-label-caps uppercase px-2.5 py-1 ${
+                            STATUS_CHIP[doc.status] ?? "bg-surface-variant text-on-surface-variant border-2 border-on-surface"
+                          }`}
+                          style={{ borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px" }}
+                        >
                           {doc.status}
                         </span>
-
                         <Link
                           to={`/documents/${doc.id}`}
-                          className="px-4 py-2 bg-indigo-600/10 hover:bg-indigo-600 border border-indigo-500/20 text-indigo-400 hover:text-white rounded-lg text-xs font-semibold transition-all"
+                          className="hand-drawn-border-thin bg-white px-3 py-1.5 font-label-caps text-label-caps hover:bg-primary/10 transition-colors whitespace-nowrap"
                         >
-                          Open Workspace
+                          Open
                         </Link>
                       </div>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
           </section>
-
         </div>
       </main>
     </div>

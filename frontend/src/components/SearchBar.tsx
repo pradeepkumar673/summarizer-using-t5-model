@@ -66,52 +66,70 @@ export default function SearchBar({ documentId }: SearchBarProps) {
 
   return (
     <div className="relative w-full max-w-md">
+      {/* Search form */}
       <form onSubmit={runSearch} className="flex items-center gap-2">
-        <div className="flex shrink-0 overflow-hidden rounded-md border border-slate-300">
-          <button
-            type="button"
-            onClick={() => handleModeChange("keyword")}
-            className={`px-2 py-1.5 text-xs font-medium transition-colors ${
-              mode === "keyword"
-                ? "bg-slate-800 text-white"
-                : "bg-white text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            Keyword
-          </button>
-          <button
-            type="button"
-            onClick={() => handleModeChange("semantic")}
-            className={`px-2 py-1.5 text-xs font-medium transition-colors ${
-              mode === "semantic"
-                ? "bg-slate-800 text-white"
-                : "bg-white text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            Semantic
-          </button>
+
+        {/* Mode toggle — notebook tab style */}
+        <div
+          className="flex shrink-0 overflow-hidden"
+          style={{ border: "2px solid #1c1b1b", borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px" }}
+        >
+          {(["keyword", "semantic"] as SearchMode[]).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => handleModeChange(m)}
+              className={`px-2.5 py-1.5 font-label-caps transition-colors ${
+                mode === m
+                  ? "bg-primary text-on-primary"
+                  : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
+              }`}
+              style={{ fontSize: "10px" }}
+            >
+              {m === "keyword" ? "🔍 Keyword" : "🧠 Semantic"}
+            </button>
+          ))}
         </div>
+
+        {/* Search input */}
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
           placeholder={mode === "keyword" ? "Search exact words..." : "Search by meaning..."}
-          className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full bg-surface-container-lowest border-2 border-on-surface px-3 py-1.5 font-body text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
+          style={{ borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px" }}
         />
+
+        {/* Search button */}
         <button
           type="submit"
           disabled={loading}
-          className="shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="shrink-0 bg-white px-3 py-1.5 font-label-caps text-label-caps text-on-surface hover:bg-primary/10 transition-colors disabled:opacity-50 active:scale-95"
+          style={{
+            border: "2px solid #1c1b1b",
+            borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+            fontSize: "10px",
+          }}
         >
           {loading ? "..." : "Search"}
         </button>
       </form>
 
+      {/* Results dropdown — paper drop-down overlay */}
       {open && (
-        <div className="absolute z-20 mt-1 max-h-96 w-full overflow-auto rounded-md border border-slate-200 bg-white shadow-lg">
-          <div className="flex items-center justify-between border-b bg-slate-50 px-3 py-1.5">
-            <span className="text-xs font-medium text-slate-500">
+        <div
+          className="absolute z-20 mt-2 max-h-96 w-full overflow-auto bg-white"
+          style={{
+            border: "2px solid #1c1b1b",
+            borderRadius: "15px 255px 15px 225px / 225px 15px 255px 15px",
+            boxShadow: "4px 4px 0px #1c1b1b",
+          }}
+        >
+          {/* Dropdown header */}
+          <div className="flex items-center justify-between border-b-2 border-on-surface bg-surface-container-low px-4 py-2">
+            <span className="font-mono text-source-code text-on-surface-variant">
               {loading
                 ? "Searching..."
                 : error
@@ -121,39 +139,52 @@ export default function SearchBar({ documentId }: SearchBarProps) {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="text-xs text-slate-400 hover:text-slate-700"
+              className="font-label-caps text-label-caps text-on-surface-variant hover:text-error transition-colors"
+              style={{ fontSize: "10px" }}
             >
-              Close
+              ✕ Close
             </button>
           </div>
-          {error && <p className="px-3 py-2 text-xs text-red-600">{error}</p>}
+
+          {error && (
+            <p className="px-4 py-2 font-body text-body-md text-error">{error}</p>
+          )}
           {!error && !loading && results.length === 0 && (
-            <p className="px-3 py-2 text-xs text-slate-400">
-              No matches found. {mode === "semantic" && 'Run "Segment Topics" first to build the semantic index.'}
+            <p className="px-4 py-3 font-body text-body-md text-on-surface-variant">
+              No matches found.{" "}
+              {mode === "semantic" && 'Run "Segment Topics" first to build the semantic index.'}
             </p>
           )}
-          <ul className="divide-y divide-slate-100">
+
+          <ul>
             {results.map((r, i) => (
               <li
                 key={`${r.source_type}_${r.chunk_id ?? r.note_id}_${i}`}
                 onClick={() => handleResultClick(r)}
-                className="cursor-pointer px-3 py-2 text-sm hover:bg-blue-50"
+                className="cursor-pointer px-4 py-3 hover:bg-primary-fixed/20 border-b border-outline-variant last:border-b-0 transition-colors"
               >
-                <div className="mb-1 flex items-center gap-2">
+                <div className="mb-1 flex items-center gap-2 flex-wrap">
                   <span
-                    className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                    className={`font-label-caps text-label-caps px-1.5 py-0.5 ${
                       r.source_type === "note"
-                        ? "bg-purple-100 text-purple-700"
-                        : "bg-slate-100 text-slate-600"
+                        ? "bg-tertiary-fixed text-on-tertiary-fixed"
+                        : "bg-surface-variant text-on-surface-variant"
                     }`}
+                    style={{
+                      fontSize: "8px",
+                      border: "1px solid #1c1b1b",
+                      borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px",
+                    }}
                   >
                     {r.source_type === "note" ? `${r.note_level} note` : "source text"}
                   </span>
-                  <span className="text-[10px] text-slate-400">
-                    Page {r.page_number} &bull; score {r.score.toFixed(3)}
+                  <span className="font-mono text-source-code text-on-surface-variant">
+                    p.{r.page_number} · {r.score.toFixed(3)}
                   </span>
                 </div>
-                <p className="max-h-10 overflow-hidden text-slate-700">{r.text}</p>
+                <p className="font-body text-body-md text-on-surface max-h-10 overflow-hidden leading-snug">
+                  {r.text}
+                </p>
               </li>
             ))}
           </ul>

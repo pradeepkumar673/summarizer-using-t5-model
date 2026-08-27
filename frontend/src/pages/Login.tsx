@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loginUser } from "../api/auth";
 import axios from "axios";
+import Logo from "../components/sketch/Logo";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -30,43 +31,83 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
+    <div className="min-h-screen bg-checkered flex items-center justify-center px-4">
+      {/* Annotation sticky-note style card */}
       <form
         onSubmit={handleSubmit}
-        className="bg-white shadow-md rounded-xl p-8 w-full max-w-sm space-y-4"
+        className="bg-white w-full max-w-sm p-8 space-y-6 relative"
+        style={{
+          border: "3px solid #1c1b1b",
+          borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+          boxShadow: "5px 5px 0px #1c1b1b",
+          transform: "rotate(-1deg)",
+        }}
       >
-        <h1 className="text-2xl font-bold text-center">Log In</h1>
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+        {/* Logo */}
+        <div className="flex justify-center mb-2">
+          <Logo size="lg" />
+        </div>
+
+        <h1
+          className="font-marker text-2xl text-center text-on-surface"
+          style={{ transform: "rotate(0.5deg)" }}
+        >
+          Log In
+        </h1>
+
+        {error && (
+          <div
+            className="bg-error-container px-3 py-2 font-body text-body-md text-on-error-container"
+            style={{ border: "1px solid #ba1a1a", borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px" }}
+          >
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <label className="block font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">
+            Email
+          </label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-surface-container-lowest border-b-2 border-on-surface px-2 py-2 font-body text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
+            placeholder="you@example.com"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+
+        <div className="space-y-1">
+          <label className="block font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">
+            Password
+          </label>
           <input
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full bg-surface-container-lowest border-b-2 border-on-surface px-2 py-2 font-body text-body-md text-on-surface focus:outline-none focus:border-primary transition-colors"
+            placeholder="••••••••"
           />
         </div>
+
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white rounded-lg py-2 font-medium hover:bg-blue-700 disabled:opacity-50"
+          className="w-full py-3 font-label-caps text-label-caps text-on-surface transition-colors disabled:opacity-50 hover:bg-primary/10 active:scale-95"
+          style={{
+            border: "3px solid #1c1b1b",
+            borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
+            boxShadow: "3px 3px 0px #1c1b1b",
+          }}
         >
           {loading ? "Logging in..." : "Log In"}
         </button>
-        <p className="text-sm text-center text-slate-500">
+
+        <p className="font-body text-body-md text-center text-on-surface-variant">
           Don't have an account?{" "}
-          <Link to="/register" className="text-blue-600 font-medium">
+          <Link to="/register" className="text-primary font-semibold hover:underline underline-offset-2">
             Register
           </Link>
         </p>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Confusion Heatmap - pradeepLLM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700;800&amp;family=Karla:wght@400;700&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#a4c9ff",
+                        "error-container": "#ffdad6",
+                        "inverse-surface": "#313030",
+                        "on-primary-fixed": "#001c39",
+                        "on-tertiary-fixed": "#0e2000",
+                        "on-error-container": "#93000a",
+                        "background": "#fcf9f8",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#498300",
+                        "primary": "#005da7",
+                        "on-surface-variant": "#414751",
+                        "surface-bright": "#fcf9f8",
+                        "on-primary-fixed-variant": "#004883",
+                        "on-error": "#ffffff",
+                        "on-primary-container": "#fdfcff",
+                        "surface-container-high": "#eae7e7",
+                        "on-tertiary-container": "#f9ffeb",
+                        "inverse-on-surface": "#f3f0ef",
+                        "tertiary-fixed": "#a1fa49",
+                        "on-background": "#1c1b1b",
+                        "on-secondary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "surface-tint": "#0060ac",
+                        "secondary": "#835500",
+                        "surface-dim": "#dcd9d9",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#2976c7",
+                        "surface-container-highest": "#e5e2e1",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed": "#ffddb4",
+                        "tertiary-fixed-dim": "#87dc2c",
+                        "primary-fixed": "#d4e3ff",
+                        "secondary-container": "#feae2c",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "secondary-fixed-dim": "#ffb955",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary-container": "#6b4500",
+                        "surface-container": "#f0eded",
+                        "on-tertiary-fixed-variant": "#2a5000",
+                        "surface-variant": "#e5e2e1",
+                        "tertiary": "#386800",
+                        "on-secondary-fixed": "#291800",
+                        "outline-variant": "#c1c7d3",
+                        "outline": "#717783",
+                        "surface": "#fcf9f8",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "on-surface": "#1c1b1b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xl": "40px",
+                        "md": "16px",
+                        "sm": "8px",
+                        "lg": "24px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "32px",
+                        "unit": "4px",
+                        "gutter": "16px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Bricolage Grotesque", "sans-serif"],
+                        "body-lg": ["Karla", "sans-serif"],
+                        "label-caps": ["JetBrains Mono", "monospace"],
+                        "display-lg": ["Bricolage Grotesque", "sans-serif"],
+                        "source-code": ["JetBrains Mono", "monospace"],
+                        "headline-md": ["Bricolage Grotesque", "sans-serif"],
+                        "body-md": ["Karla", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "source-code": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .wobbly-border {
+            border: 2px solid #1c1b1b;
+            border-radius: 4px 12px 8px 6px;
+        }
+        .wobbly-border-thick {
+            border: 3px solid #1c1b1b;
+            border-radius: 8px 4px 12px 6px;
+        }
+        .torn-edge-bottom {
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5px), 95% 100%, 90% calc(100% - 3px), 85% 100%, 80% calc(100% - 4px), 75% 100%, 70% calc(100% - 2px), 65% 100%, 60% calc(100% - 5px), 55% 100%, 50% calc(100% - 3px), 45% 100%, 40% calc(100% - 4px), 35% 100%, 30% calc(100% - 2px), 25% 100%, 20% calc(100% - 5px), 15% 100%, 10% calc(100% - 3px), 5% 100%, 0 calc(100% - 4px));
+        }
+        .scribble-yellow { background: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(254, 174, 44, 0.5) 2px, rgba(254, 174, 44, 0.5) 4px); }
+        .scribble-orange { background: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255, 185, 85, 0.6) 2px, rgba(255, 185, 85, 0.6) 4px); }
+        .scribble-red { background: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(186, 26, 26, 0.4) 2px, rgba(186, 26, 26, 0.4) 4px); }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen overflow-x-hidden relative">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-margin-desktop py-sm bg-background dark:bg-on-background docked full-width top-0 border-b-[3px] border-on-background z-50 sticky">
+<div class="font-headline-md text-headline-md font-bold text-on-background dark:text-background tracking-tighter">
+            pradeepLLM
+        </div>
+<div class="flex items-center gap-4 text-primary dark:text-inverse-primary">
+<button class="hover:bg-primary-container/20 active:scale-95 transition-transform p-2 rounded-full wobbly-border">
+<span class="material-symbols-outlined text-on-background" data-icon="bookmark">bookmark</span>
+</button>
+<button class="hover:bg-primary-container/20 active:scale-95 transition-transform p-2 rounded-full wobbly-border">
+<span class="material-symbols-outlined text-on-background" data-icon="more_vert">more_vert</span>
+</button>
+<div class="w-10 h-10 rounded-full wobbly-border-thick bg-surface-container flex items-center justify-center overflow-hidden">
+<img alt="User sketch avatar" class="w-full h-full object-cover" data-alt="A small hand-drawn sketch style doodle avatar of a student, simple black ink lines on a cream background, minimalist sketchbook style, high contrast." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa2cxQmKDEQm1RL47abbayzoQbZNty9UaL-7UtEYAgJ0nUKgknCX0pzEXVjpPbbkkG-cVem962GNeMWyiueay8VtOK7-osQfitwCZilSL-96psCeWiQBAURbu6clDFNlQzRheE22JTONKRnvNGM5FVd9L_cM-yF600Bb4iTHwfB2QwpdaBXUQ48oumSrZDAqFg88PZ709VqMSKyQVRZLGqg2jmNox1Ttd_G3GD5x6QacbGt21QECRkow"/>
+</div>
+</div>
+</header>
+<div class="flex">
+<!-- Main Canvas -->
+<main class="flex-1 p-margin-desktop pr-32">
+<div class="flex justify-between items-end mb-lg">
+<h1 class="font-display-lg text-display-lg text-on-background transform -rotate-1">Confusion Heatmap</h1>
+<div class="flex items-center gap-2 p-2 wobbly-border bg-surface-container-highest transform rotate-1">
+<button class="px-3 py-1 font-label-caps text-label-caps bg-primary-container text-on-primary-container wobbly-border">My heatmap</button>
+<button class="px-3 py-1 font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-dim wobbly-border">Class average</button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg mt-xl">
+<!-- Left: Thumbnails -->
+<div class="lg:col-span-2 flex flex-wrap gap-md relative">
+<!-- Thumbnail 1 -->
+<div class="w-32 h-48 bg-surface-container-lowest wobbly-border relative torn-edge-bottom transform -rotate-2 shadow-[2px_2px_0px_#1c1b1b] p-2 flex flex-col justify-between cursor-pointer hover:-translate-y-1 transition-transform">
+<div class="absolute inset-0 scribble-red opacity-80 m-1 pointer-events-none"></div>
+<div class="w-full h-24 bg-surface-variant/50 wobbly-border mb-2"></div>
+<div class="w-full h-4 bg-surface-variant/50 wobbly-border mb-1"></div>
+<div class="w-2/3 h-4 bg-surface-variant/50 wobbly-border"></div>
+<span class="font-source-code text-source-code text-on-background absolute bottom-2 right-2">p.12</span>
+</div>
+<!-- Thumbnail 2 -->
+<div class="w-32 h-48 bg-surface-container-lowest wobbly-border relative torn-edge-bottom transform rotate-1 shadow-[2px_2px_0px_#1c1b1b] p-2 flex flex-col justify-between cursor-pointer hover:-translate-y-1 transition-transform">
+<div class="absolute inset-0 scribble-orange opacity-70 m-1 pointer-events-none"></div>
+<div class="w-full h-20 bg-surface-variant/50 wobbly-border mb-2"></div>
+<div class="w-full h-12 bg-surface-variant/50 wobbly-border mb-1"></div>
+<span class="font-source-code text-source-code text-on-background absolute bottom-2 right-2">p.13</span>
+</div>
+<!-- Thumbnail 3 -->
+<div class="w-32 h-48 bg-surface-container-lowest wobbly-border relative torn-edge-bottom transform -rotate-1 shadow-[2px_2px_0px_#1c1b1b] p-2 flex flex-col justify-between cursor-pointer hover:-translate-y-1 transition-transform">
+<div class="absolute inset-0 scribble-yellow opacity-60 m-1 pointer-events-none"></div>
+<div class="w-full h-16 bg-surface-variant/50 wobbly-border mb-2"></div>
+<div class="w-full h-16 bg-surface-variant/50 wobbly-border mb-1"></div>
+<span class="font-source-code text-source-code text-on-background absolute bottom-2 right-2">p.14</span>
+</div>
+</div>
+<!-- Right: Legend & Topics -->
+<div class="lg:col-span-1 flex flex-col gap-lg">
+<!-- Legend Card -->
+<div class="bg-surface-container-lowest wobbly-border-thick p-4 shadow-[3px_3px_0px_#1c1b1b] transform rotate-1">
+<h3 class="font-headline-sm text-headline-sm mb-4 border-b-2 border-on-background pb-2">Legend</h3>
+<ul class="space-y-3 font-body-lg text-body-lg">
+<li class="flex items-center gap-3">
+<div class="w-6 h-6 wobbly-border scribble-yellow"></div>
+<span>Yellow = mild attention</span>
+</li>
+<li class="flex items-center gap-3">
+<div class="w-6 h-6 wobbly-border scribble-orange"></div>
+<span>Orange = struggled</span>
+</li>
+<li class="flex items-center gap-3">
+<div class="w-6 h-6 wobbly-border scribble-red"></div>
+<span>Red = high priority</span>
+</li>
+</ul>
+</div>
+<!-- Top Topics -->
+<div>
+<h3 class="font-headline-sm text-headline-sm mb-4 transform -rotate-1">Top 3 topics to revise</h3>
+<div class="space-y-3">
+<div class="bg-error-container/30 wobbly-border p-3 flex items-start gap-3 transform rotate-1 torn-edge-bottom">
+<span class="material-symbols-outlined text-error" data-icon="local_fire_department">local_fire_department</span>
+<div>
+<div class="font-bold text-on-background">Entropy Calculations</div>
+<div class="font-source-code text-source-code text-on-surface-variant">asked 4 doubts here</div>
+</div>
+</div>
+<div class="bg-secondary-container/30 wobbly-border p-3 flex items-start gap-3 transform -rotate-1 torn-edge-bottom">
+<span class="material-symbols-outlined text-secondary" data-icon="local_fire_department">local_fire_department</span>
+<div>
+<div class="font-bold text-on-background">First Law Paradoxes</div>
+<div class="font-source-code text-source-code text-on-surface-variant">re-read 6 times</div>
+</div>
+</div>
+<div class="bg-surface-container-highest wobbly-border p-3 flex items-start gap-3 transform rotate-2 torn-edge-bottom">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="local_fire_department">local_fire_department</span>
+<div>
+<div class="font-bold text-on-background">Carnot Cycle</div>
+<div class="font-source-code text-source-code text-on-surface-variant">spent 20 mins on p.45</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- SideNavBar -->
+<nav class="fixed top-0 right-0 h-screen flex flex-col items-end gap-2 pr-2 pt-20 w-24 bg-transparent font-label-caps text-label-caps z-40 hidden md:flex">
+<!-- Notes -->
+<button class="bg-secondary-container text-on-secondary-container border-2 border-on-background rounded-l-full py-4 mb-2 w-full flex justify-center hover:brightness-110 group relative">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="absolute right-full mr-2 opacity-0 group-hover:opacity-100 bg-on-background text-background px-2 py-1 rounded whitespace-nowrap transition-opacity">Notes</span>
+</button>
+<!-- Heatmap (Active) -->
+<button class="bg-tertiary-container text-on-tertiary-container border-2 border-on-background -translate-x-2 rounded-l-full py-4 w-full flex justify-center hover:brightness-110 Active: -rotate-2 transition-all shadow-[-4px_2px_0px_rgba(0,0,0,1)] relative z-10">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+<span class="absolute right-full mr-2 bg-on-background text-background px-2 py-1 rounded whitespace-nowrap">Heatmap</span>
+</button>
+<!-- Exam Essentials -->
+<button class="bg-secondary-container text-on-secondary-container border-2 border-on-background rounded-l-full py-4 mb-2 w-full flex justify-center hover:brightness-110 group relative">
+<span class="material-symbols-outlined" data-icon="auto_stories">auto_stories</span>
+<span class="absolute right-full mr-2 opacity-0 group-hover:opacity-100 bg-on-background text-background px-2 py-1 rounded whitespace-nowrap transition-opacity">Exam Essentials</span>
+</button>
+<!-- Knowledge Graph -->
+<button class="bg-secondary-container text-on-secondary-container border-2 border-on-background rounded-l-full py-4 mb-2 w-full flex justify-center hover:brightness-110 group relative">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span class="absolute right-full mr-2 opacity-0 group-hover:opacity-100 bg-on-background text-background px-2 py-1 rounded whitespace-nowrap transition-opacity">Knowledge Graph</span>
+</button>
+<!-- Viva -->
+<button class="bg-secondary-container text-on-secondary-container border-2 border-on-background rounded-l-full py-4 mb-2 w-full flex justify-center hover:brightness-110 group relative">
+<span class="material-symbols-outlined" data-icon="record_voice_over">record_voice_over</span>
+<span class="absolute right-full mr-2 opacity-0 group-hover:opacity-100 bg-on-background text-background px-2 py-1 rounded whitespace-nowrap transition-opacity">Viva</span>
+</button>
+<!-- Search -->
+<button class="bg-secondary-container text-on-secondary-container border-2 border-on-background rounded-l-full py-4 mb-2 w-full flex justify-center hover:brightness-110 group relative">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+<span class="absolute right-full mr-2 opacity-0 group-hover:opacity-100 bg-on-background text-background px-2 py-1 rounded whitespace-nowrap transition-opacity">Search</span>
+</button>
+</nav>
+</div>
+</body></html>

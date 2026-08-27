@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Exam Essentials - pradeepLLM</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&amp;family=Karla:ital,wght@0,200..800;1,200..800&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;family=Caveat:wght@400..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#c1c7d3",
+                        "on-secondary-fixed": "#291800",
+                        "surface-container-low": "#f6f3f2",
+                        "on-secondary-fixed-variant": "#633f00",
+                        "error": "#ba1a1a",
+                        "inverse-surface": "#313030",
+                        "secondary": "#835500",
+                        "tertiary-container": "#498300",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#414751",
+                        "on-primary-fixed-variant": "#004883",
+                        "on-tertiary-container": "#f9ffeb",
+                        "secondary-container": "#feae2c",
+                        "surface-container-highest": "#e5e2e1",
+                        "surface-tint": "#0060ac",
+                        "on-tertiary-fixed-variant": "#2a5000",
+                        "primary-fixed": "#d4e3ff",
+                        "on-tertiary-fixed": "#0e2000",
+                        "inverse-primary": "#a4c9ff",
+                        "primary-fixed-dim": "#a4c9ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-variant": "#e5e2e1",
+                        "tertiary-fixed-dim": "#87dc2c",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#dcd9d9",
+                        "on-primary-container": "#fdfcff",
+                        "on-primary-fixed": "#001c39",
+                        "surface-bright": "#fcf9f8",
+                        "primary": "#005da7",
+                        "surface-container": "#f0eded",
+                        "inverse-on-surface": "#f3f0ef",
+                        "error-container": "#ffdad6",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#2976c7",
+                        "outline": "#717783",
+                        "on-background": "#1c1b1b",
+                        "on-secondary-container": "#6b4500",
+                        "tertiary-fixed": "#a1fa49",
+                        "on-tertiary": "#ffffff",
+                        "on-surface": "#1c1b1b",
+                        "secondary-fixed-dim": "#ffb955",
+                        "surface": "#fcf9f8",
+                        "secondary-fixed": "#ffddb4",
+                        "tertiary": "#386800",
+                        "background": "#fcf9f8",
+                        "surface-container-high": "#eae7e7",
+                        "on-error": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "md": "16px",
+                        "xs": "4px",
+                        "lg": "24px",
+                        "margin-mobile": "16px",
+                        "xl": "40px",
+                        "margin-desktop": "32px",
+                        "unit": "4px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Bricolage Grotesque"],
+                        "headline-md": ["Bricolage Grotesque"],
+                        "body-md": ["Karla"],
+                        "label-caps": ["JetBrains Mono"],
+                        "body-lg": ["Karla"],
+                        "display-lg": ["Bricolage Grotesque"],
+                        "source-code": ["JetBrains Mono"],
+                        "handwriting": ["Caveat", "cursive"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-md": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "1.0", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "source-code": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .wobbly-border {
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            border: 2px solid currentColor;
+        }
+        .wobbly-border-thick {
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            border: 3px solid currentColor;
+        }
+        .wobbly-line {
+            border-bottom: 2px solid currentColor;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+        }
+        .torn-bottom {
+            clip-path: polygon(0 0, 100% 0, 100% calc(100% - 10px), 98% 100%, 95% calc(100% - 5px), 92% 100%, 88% calc(100% - 10px), 85% 100%, 81% calc(100% - 5px), 78% 100%, 75% calc(100% - 8px), 72% 100%, 68% calc(100% - 4px), 65% 100%, 62% calc(100% - 9px), 58% 100%, 55% calc(100% - 6px), 52% 100%, 48% calc(100% - 10px), 45% 100%, 42% calc(100% - 5px), 38% 100%, 35% calc(100% - 8px), 32% 100%, 28% calc(100% - 4px), 25% 100%, 22% calc(100% - 9px), 18% 100%, 15% calc(100% - 6px), 12% 100%, 8% calc(100% - 10px), 5% 100%, 2% calc(100% - 5px), 0 100%);
+        }
+        .paper-texture {
+            background-color: #fcf9f8;
+            background-image: 
+                linear-gradient(90deg, transparent 79px, #ffb955 79px, #ffb955 81px, transparent 81px),
+                linear-gradient(#e5e2e1 .1em, transparent .1em);
+            background-size: 100% 1.2em;
+        }
+        .ink-shadow {
+            box-shadow: 4px 4px 0px 0px rgba(28,27,27,1);
+        }
+        .handwritten-arrow {
+            position: absolute;
+            top: -20px;
+            right: 40px;
+            transform: rotate(-15deg);
+            color: #ba1a1a;
+            font-family: 'Caveat', cursive;
+            font-size: 18px;
+            line-height: 1;
+            white-space: nowrap;
+        }
+        .handwritten-arrow::after {
+            content: '↘';
+            position: absolute;
+            right: -15px;
+            top: 5px;
+            font-family: sans-serif;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md h-screen overflow-hidden flex flex-col paper-texture selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface border-b-[3px] border-on-surface docked full-width top-0 border-b-2 border-on-surface flat no shadows with 2px solid ink offset flex justify-between items-center w-full px-margin-desktop h-16 z-50">
+<div class="flex items-center gap-sm">
+<span class="font-headline-md text-headline-md text-primary dark:text-primary-fixed italic wobbly-border px-xs py-1">pradeepLLM</span>
+</div>
+<div class="flex items-center gap-md">
+<button class="wobbly-border p-xs hover:bg-primary-container/30 transition-colors text-on-surface-variant group relative">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">account_circle</span>
+</button>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden relative">
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto p-margin-desktop pr-[100px] md:pr-[140px] relative">
+<!-- Journal Title -->
+<div class="mb-xl flex items-end gap-sm -rotate-1 relative">
+<h1 class="font-display-lg text-display-lg text-on-surface decoration-wavy underline decoration-secondary-container decoration-4 underline-offset-4">Exam Essentials</h1>
+<span class="material-symbols-outlined text-secondary-container text-4xl mb-2" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter max-w-5xl">
+<!-- Definitions Section -->
+<section class="flex flex-col gap-md rotate-1">
+<h2 class="font-headline-md text-headline-md text-primary wobbly-line inline-block pb-xs">Definitions</h2>
+<div class="bg-surface-container-lowest wobbly-border ink-shadow p-md torn-bottom relative hover:-translate-y-1 transition-transform">
+<span class="material-symbols-outlined absolute top-sm right-sm text-error rotate-45" style="font-variation-settings: 'FILL' 1;">push_pin</span>
+<div class="handwritten-arrow">save for quick revision</div>
+<h3 class="font-label-caps text-label-caps text-on-surface mb-sm">NEURAL NETWORK</h3>
+<p class="font-handwriting text-2xl text-on-surface-variant">A computational model inspired by the human brain, consisting of interconnected nodes (neurons) organized in layers.</p>
+</div>
+<div class="bg-surface-container-lowest wobbly-border ink-shadow p-md torn-bottom relative hover:-translate-y-1 transition-transform">
+<span class="material-symbols-outlined absolute top-sm right-sm text-error rotate-45" style="font-variation-settings: 'FILL' 1;">push_pin</span>
+<h3 class="font-label-caps text-label-caps text-on-surface mb-sm">GRADIENT DESCENT</h3>
+<p class="font-handwriting text-2xl text-on-surface-variant">An optimization algorithm used to minimize the loss function by iteratively moving in the direction of steepest descent.</p>
+</div>
+</section>
+<!-- Formulas Section -->
+<section class="flex flex-col gap-md -rotate-1 mt-md lg:mt-0">
+<h2 class="font-headline-md text-headline-md text-secondary wobbly-line inline-block pb-xs">Formulas</h2>
+<div class="bg-surface-container-lowest wobbly-border-thick ink-shadow p-md relative hover:-translate-y-1 transition-transform">
+<span class="material-symbols-outlined absolute top-sm right-sm text-error rotate-45" style="font-variation-settings: 'FILL' 1;">push_pin</span>
+<div class="absolute -left-3 top-4 bg-secondary-container text-on-secondary-container font-label-caps text-label-caps px-2 py-1 wobbly-border rotate-[-10deg]">p. 42</div>
+<h3 class="font-label-caps text-label-caps text-on-surface mb-sm ml-lg">Softmax Function</h3>
+<div class="font-source-code text-source-code text-primary bg-primary-fixed/20 p-sm wobbly-border mt-2 text-center">
+                            σ(z)ᵢ = e^(zᵢ) / Σ(e^(zⱼ))
+                        </div>
+</div>
+<div class="bg-surface-container-lowest wobbly-border-thick ink-shadow p-md relative hover:-translate-y-1 transition-transform">
+<span class="material-symbols-outlined absolute top-sm right-sm text-error rotate-45" style="font-variation-settings: 'FILL' 1;">push_pin</span>
+<h3 class="font-label-caps text-label-caps text-on-surface mb-sm">Mean Squared Error (MSE)</h3>
+<div class="font-source-code text-source-code text-primary bg-primary-fixed/20 p-sm wobbly-border mt-2 text-center">
+                            MSE = (1/n) * Σ(yᵢ - ŷᵢ)²
+                        </div>
+</div>
+</section>
+<!-- Rules & Classifications Section -->
+<section class="flex flex-col gap-md rotate-2 lg:col-span-2 mt-lg">
+<h2 class="font-headline-md text-headline-md text-tertiary wobbly-line inline-block pb-xs">Rules &amp; Classifications</h2>
+<div class="flex flex-wrap gap-sm">
+<div class="bg-tertiary-container/10 border-2 border-tertiary text-on-surface font-handwriting text-2xl px-md py-sm torn-bottom shadow-sm">
+                            Supervised vs Unsupervised
+                        </div>
+<div class="bg-tertiary-container/10 border-2 border-tertiary text-on-surface font-handwriting text-2xl px-md py-sm torn-bottom shadow-sm">
+                            Bias-Variance Tradeoff
+                        </div>
+<div class="bg-tertiary-container/10 border-2 border-tertiary text-on-surface font-handwriting text-2xl px-md py-sm torn-bottom shadow-sm">
+                            Overfitting Rules
+                        </div>
+</div>
+</section>
+</div>
+</main>
+<!-- SideNavBar -->
+<nav class="fixed right-0 top-0 h-full w-[80px] md:w-[120px] bg-surface-container dark:bg-surface-container border-l-2 border-on-surface flat no shadows stacked-paper-effect flex flex-col items-center py-lg gap-sm z-40 mt-16 pt-xl">
+<a class="w-full flex flex-col items-center gap-xs p-2 text-on-surface-variant dark:text-on-surface-variant hover:translate-x-[-4px] hover:bg-surface-variant dark:hover:bg-surface-variant transition-transform group relative" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform wobbly-border p-1">description</span>
+<span class="font-label-caps text-[10px] hidden md:block">Notes</span>
+</a>
+<a class="w-full flex flex-col items-center gap-xs p-2 text-on-surface-variant dark:text-on-surface-variant hover:translate-x-[-4px] hover:bg-surface-variant dark:hover:bg-surface-variant transition-transform group relative" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform wobbly-border p-1">grid_view</span>
+<span class="font-label-caps text-[10px] hidden md:block">Heatmap</span>
+</a>
+<!-- Active Tab -->
+<div class="w-full relative py-sm group cursor-pointer">
+<div class="absolute right-0 top-0 h-full w-[110%] bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary border-2 border-on-surface -translate-x-2 flex flex-col items-center justify-center gap-xs rounded-l-lg shadow-[-2px_2px_0px_rgba(0,0,0,1)] hover:-translate-x-3 transition-transform z-10 before:content-[''] before:absolute before:right-[-10px] before:top-[-2px] before:bottom-[-2px] before:w-[12px] before:bg-surface-container before:z-[-1]">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">assignment_late</span>
+<span class="font-label-caps text-[10px] hidden md:block text-center px-1">Exam<br/>Essentials</span>
+</div>
+</div>
+<a class="w-full flex flex-col items-center gap-xs p-2 text-on-surface-variant dark:text-on-surface-variant hover:translate-x-[-4px] hover:bg-surface-variant dark:hover:bg-surface-variant transition-transform group relative mt-md" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform wobbly-border p-1">hub</span>
+<span class="font-label-caps text-[10px] hidden md:block text-center">Knowledge<br/>Graph</span>
+</a>
+<a class="w-full flex flex-col items-center gap-xs p-2 text-on-surface-variant dark:text-on-surface-variant hover:translate-x-[-4px] hover:bg-surface-variant dark:hover:bg-surface-variant transition-transform group relative" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform wobbly-border p-1">record_voice_over</span>
+<span class="font-label-caps text-[10px] hidden md:block">Viva</span>
+</a>
+<a class="w-full flex flex-col items-center gap-xs p-2 text-on-surface-variant dark:text-on-surface-variant hover:translate-x-[-4px] hover:bg-surface-variant dark:hover:bg-surface-variant transition-transform group relative mt-auto mb-lg" href="#">
+<span class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform wobbly-border p-1">search</span>
+<span class="font-label-caps text-[10px] hidden md:block">Search</span>
+</a>
+</nav>
+</div>
+</body></html>

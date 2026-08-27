@@ -21,36 +21,50 @@ interface Props {
   visiblePages: number[];
 }
 
+// Marker-wash colours — warm tints matching the sketch palette
 const HEAT_COLOUR: Record<HeatLevel, string> = {
-  none: "transparent",
-  yellow: "rgba(250, 204, 21, 0.35)",   // yellow-400 35%
-  orange: "rgba(249, 115, 22, 0.40)",   // orange-500 40%
-  red: "rgba(239, 68, 68, 0.45)",       // red-500 45%
+  none:   "transparent",
+  yellow: "rgba(254, 174, 44, 0.30)",   // marker-yellow 30%
+  orange: "rgba(186, 100, 0,  0.35)",   // between yellow & red
+  red:    "rgba(186, 26,  26, 0.35)",   // marker-red 35%
 };
 
-const HEAT_RING: Record<HeatLevel, string> = {
-  none: "none",
-  yellow: "1px solid rgba(234,179,8,0.6)",
-  orange: "1px solid rgba(234,88,12,0.7)",
-  red: "1px solid rgba(220,38,38,0.8)",
+// Ink border matching each level
+const HEAT_BORDER: Record<HeatLevel, string> = {
+  none:   "none",
+  yellow: "2px solid rgba(131, 85, 0,  0.50)",   // secondary / mustard
+  orange: "2px solid rgba(186, 100, 0, 0.60)",
+  red:    "2px solid rgba(186, 26,  26, 0.70)",  // error
 };
+
+// ── Legend ────────────────────────────────────────────────────────────────────
 
 export function HeatmapLegend() {
   return (
-    <div className="flex items-center gap-3 text-[11px] text-slate-600">
-      <span className="font-medium">Heat:</span>
+    <div className="flex items-center gap-4">
+      <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">
+        Confusion Heat:
+      </span>
       {(["yellow", "orange", "red"] as HeatLevel[]).map((level) => (
-        <span key={level} className="flex items-center gap-1">
+        <span key={level} className="flex items-center gap-1.5">
           <span
-            className="inline-block h-3 w-5 rounded-sm"
-            style={{ background: HEAT_COLOUR[level], border: HEAT_RING[level] }}
+            className="inline-block h-3.5 w-6"
+            style={{
+              background: HEAT_COLOUR[level],
+              border: HEAT_BORDER[level],
+              borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px",
+            }}
           />
-          {level}
+          <span className="font-mono text-source-code text-on-surface-variant capitalize">
+            {level}
+          </span>
         </span>
       ))}
     </div>
   );
 }
+
+// ── Overlay ───────────────────────────────────────────────────────────────────
 
 export default function HeatmapOverlay({
   documentId,
@@ -65,9 +79,7 @@ export default function HeatmapOverlay({
     setLoading(true);
     getHeatmap(documentId)
       .then(setHeatmap)
-      .catch(() => {
-        /* silently ignore */
-      })
+      .catch(() => { /* silently ignore */ })
       .finally(() => setLoading(false));
   }, [documentId]);
 
@@ -97,14 +109,16 @@ export default function HeatmapOverlay({
               key={`heat-${chunk.id}`}
               data-heatmap="true"
               title={`Confusion level: ${level} (paragraph ${chunk.paragraph_id})`}
-              className="pointer-events-none absolute rounded-sm"
+              className="pointer-events-none absolute"
               style={{
-                left: x0 * scaleInfo.scale,
-                top: y0 * scaleInfo.scale,
-                width: (x1 - x0) * scaleInfo.scale,
+                left:   x0 * scaleInfo.scale,
+                top:    y0 * scaleInfo.scale,
+                width:  (x1 - x0) * scaleInfo.scale,
                 height: (y1 - y0) * scaleInfo.scale,
                 background: HEAT_COLOUR[level],
-                outline: HEAT_RING[level],
+                border: HEAT_BORDER[level],
+                // Slightly wobbly border radius for marker-wash feel
+                borderRadius: "255px 5px 225px 5px / 5px 225px 5px 255px",
               }}
             />
           );
