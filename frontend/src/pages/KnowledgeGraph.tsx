@@ -2,13 +2,10 @@
  * STEP 14 — Knowledge Graph page
  *
  * Renders the document's knowledge graph using @xyflow/react.
- * - Nodes: Topics (indigo) and ExamEssentials (colour-coded by category)
- * - Edges: "contains" (topic→essential), "leads_to" (topic→topic), "related" (essential↔essential)
- * - Click a node → fires focusSearchResult to highlight its source page in the PDF
- * - Click an edge → highlights the justifying paragraphs in the PDF
- *
- * Layout: Uses a simple layered layout where Topic nodes form a left column
- * and ExamEssential nodes fan out to the right, positioned by source_page.
+ * - Topic-Centric Layout: Each Topic forms a clean horizontal cluster with its child concept cards.
+ * - Category-Coded Nodes: Definitions, Formulas, Units, Rules, Examples, Exceptions.
+ * - Topic Filtering: Dropdown to isolate specific topics or view all cleanly.
+ * - Interactive: Click node/edge → jumps to corresponding page in PDF.
  */
 import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -35,120 +32,153 @@ import { useWorkspaceStore } from "../store/workspaceStore";
 
 // ── Layout constants ─────────────────────────────────────────────────────────
 const TOPIC_X = 60;
-const TOPIC_Y_GAP = 130;
 const ESS_X_BASE = 360;
-const ESS_X_GAP = 260;
-const ESS_Y_GAP = 90;
-
-// Category column offsets so essentials don't all pile on top of each other
-const CAT_COL: Record<string, number> = {
-  definition: 0,
-  formula: 1,
-  unit: 2,
-  rule: 0,
-  example: 1,
-  exception: 2,
-};
-
-// ── Node width / height ──────────────────────────────────────────────────────
-const TOPIC_W = 200;
-const ESS_W = 220;
+const ESS_W = 230;
 
 // ── Build ReactFlow nodes and edges from raw API data ────────────────────────
 function buildFlowElements(
   rawNodes: GraphNode[],
-  rawEdges: GraphEdge[]
+  rawEdges: GraphEdge[],
+  selectedTopicFilter: string = "all"
 ): { nodes: Node[]; edges: Edge[] } {
-  const topics = rawNodes.filter((n) => n.node_type === "topic");
-  const essentials = rawNodes.filter((n) => n.node_type !== "topic");
+  const allTopics = rawNodes.filter((n) => n.node_type === "topic");
+  const allEssentials = rawNodes.filter((n) => n.node_type !== "topic");
 
-  // Track y position per category column
-  const colY: Record<number, number> = {};
+  const topicChildrenMap: Record<string, GraphNode[]> = {};
+  allTopics.forEach((t) => (topicChildrenMap[t.id] = []));
+  const essentialParentMap: Record<string, string> = {};
+
+  rawEdges.forEach((edge) => {
+    if (edge.edge_type === "contains") {
+      if (topicChildrenMap[edge.source]) {
+        const essNode = allEssentials.find((e) => e.id === edge.target);
+        if (essNode && !topicChildrenMap[edge.source].some((e) => e.id === essNode.id)) {
+          topicChildrenMap[edge.source].push(essNode);
+          essentialParentMap[essNode.id] = edge.source;
+        }
+      }
+    }
+  });
+
+  // Map remaining unparented essentials by page proximity
+  allEssentials.forEach((ess) => {
+    if (!essentialParentMap[ess.id] && allTopics.length > 0) {
+      const page = ess.page_start ?? ess.source_page ?? 1;
+      let closestTopic = allTopics[0];
+      let minDiff = Infinity;
+      allTopics.forEach((t) => {
+        const tPage = t.page_start ?? t.source_page ?? 1;
+        const diff = Math.abs(page - tPage);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestTopic = t;
+        }
+      });
+      topicChildrenMap[closestTopic.id].push(ess);
+      essentialParentMap[ess.id] = closestTopic.id;
+    }
+  });
+
+  const filteredTopics = selectedTopicFilter === "all"
+    ? allTopics
+    : allTopics.filter((t) => t.id === selectedTopicFilter || t.label.toLowerCase().includes(selectedTopicFilter.toLowerCase()));
 
   const flowNodes: Node[] = [];
+  const validNodeIds = new Set<string>();
 
-  // Topic nodes – left column, evenly spaced
-  topics.forEach((t, i) => {
+  let currentY = 50;
+
+  filteredTopics.forEach((topic) => {
+    validNodeIds.add(topic.id);
+
+    const children = topicChildrenMap[topic.id] || [];
+    const numRows = Math.ceil(children.length / 2);
+    const clusterHeight = Math.max(140, numRows * 105 + 30);
+
+    // Parent Topic Node on the left
     flowNodes.push({
-      id: t.id,
-      position: { x: TOPIC_X, y: 40 + i * TOPIC_Y_GAP },
-      data: {
-        label: t.label,
-        rawNode: t,
-      },
+      id: topic.id,
+      position: { x: TOPIC_X, y: currentY + Math.max(0, (clusterHeight - 80) / 2) },
+      data: { label: topic.label, rawNode: topic },
       style: {
-        background: t.colour,
-        color: "#fff",
+        background: topic.colour || "#005da7",
+        color: "#ffffff",
         border: "3px solid #1c1b1b",
-        borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
-        padding: "8px 12px",
+        borderRadius: "14px",
+        padding: "10px 14px",
         fontSize: 13,
-        fontWeight: 700,
-        width: TOPIC_W,
-        boxShadow: "3px 3px 0px #1c1b1b",
+        fontWeight: 800,
+        width: 240,
+        boxShadow: "4px 4px 0px #1c1b1b",
         fontFamily: "Bricolage Grotesque, sans-serif",
       },
       sourcePosition: "right" as any,
       targetPosition: "left" as any,
     });
-  });
 
-  // Essential nodes – multi-column layout to the right
-  essentials.forEach((e) => {
-    const col = CAT_COL[e.node_type] ?? 0;
-    const currentY = colY[col] ?? 20;
-    colY[col] = currentY + ESS_Y_GAP;
+    // Child Essential Nodes in structured 2-column grid to the right
+    children.forEach((child, idx) => {
+      validNodeIds.add(child.id);
+      const col = idx % 2;
+      const row = Math.floor(idx / 2);
 
-    const x = ESS_X_BASE + col * ESS_X_GAP;
-    flowNodes.push({
-      id: e.id,
-      position: { x, y: currentY },
-      data: { label: e.label, rawNode: e },
-      style: {
-        background: e.colour,
-        color: "#fff",
-        border: "2px solid #1c1b1b",
-        borderRadius: "255px 15px 225px 15px / 15px 225px 15px 255px",
-        padding: "6px 10px",
-        fontSize: 11,
-        width: ESS_W,
-        boxShadow: "2px 2px 0px #1c1b1b",
-        whiteSpace: "normal",
-        wordBreak: "break-word",
-        fontFamily: "Karla, sans-serif",
-      },
-      sourcePosition: "right" as any,
-      targetPosition: "left" as any,
+      const childX = ESS_X_BASE + col * (ESS_W + 35);
+      const childY = currentY + row * 105;
+
+      flowNodes.push({
+        id: child.id,
+        position: { x: childX, y: childY },
+        data: { label: child.label, rawNode: child },
+        style: {
+          background: child.colour || "#ffffff",
+          color: "#ffffff",
+          border: "2px solid #1c1b1b",
+          borderRadius: "10px",
+          padding: "8px 12px",
+          fontSize: 11,
+          fontWeight: 600,
+          width: ESS_W,
+          boxShadow: "3px 3px 0px #1c1b1b",
+          whiteSpace: "normal",
+          wordBreak: "break-word",
+          fontFamily: "Karla, sans-serif",
+        },
+        sourcePosition: "right" as any,
+        targetPosition: "left" as any,
+      });
     });
+
+    currentY += clusterHeight + 70; // 70px separation between topic clusters
   });
 
-  // Edges
-  const flowEdges: Edge[] = rawEdges.map((e, idx) => {
-    const isLeadsTo = e.edge_type === "leads_to";
-    const isRelated = e.edge_type === "related";
-    return {
-      id: e.edge_id ?? `edge-${idx}`,
-      source: e.source,
-      target: e.target,
-      label: e.label,
-      labelStyle: { fontSize: 10, fill: "#414751", fontFamily: "JetBrains Mono, monospace" },
-      labelBgStyle: { fill: "#fcf9f8", fillOpacity: 0.9 },
-      animated: isLeadsTo,
-      type: isRelated ? "straight" : "smoothstep",
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: isLeadsTo ? "#005da7" : isRelated ? "#717783" : "#1c1b1b",
-        width: 16,
-        height: 16,
-      },
-      style: {
-        stroke: isLeadsTo ? "#005da7" : isRelated ? "#717783" : "#1c1b1b",
-        strokeWidth: isLeadsTo ? 2.5 : 1.5,
-        strokeDasharray: isRelated ? "6,4" : isLeadsTo ? undefined : "3,3",
-      },
-      data: { rawEdge: e },
-    };
-  });
+  const flowEdges: Edge[] = rawEdges
+    .filter((e) => validNodeIds.has(e.source) && validNodeIds.has(e.target))
+    .map((e, idx) => {
+      const isLeadsTo = e.edge_type === "leads_to";
+      const isRelated = e.edge_type === "related";
+      return {
+        id: e.edge_id ?? `edge-${idx}`,
+        source: e.source,
+        target: e.target,
+        label: e.label,
+        labelStyle: { fontSize: 10, fill: "#414751", fontWeight: 600, fontFamily: "JetBrains Mono, monospace" },
+        labelBgStyle: { fill: "#fcf9f8", fillOpacity: 0.95 },
+        animated: isLeadsTo,
+        type: isRelated ? "straight" : "bezier",
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: isLeadsTo ? "#005da7" : isRelated ? "#717783" : "#1c1b1b",
+          width: 14,
+          height: 14,
+        },
+        style: {
+          stroke: isLeadsTo ? "#005da7" : isRelated ? "#717783" : "#1c1b1b",
+          strokeWidth: isLeadsTo ? 2.5 : 1.5,
+          strokeDasharray: isRelated ? "6,4" : undefined,
+        },
+        data: { rawEdge: e },
+      };
+    });
 
   return { nodes: flowNodes, edges: flowEdges };
 }
@@ -200,14 +230,29 @@ function Legend() {
 export default function KnowledgeGraph() {
   const { id } = useParams<{ id: string }>();
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
+  const [rawGraphData, setRawGraphData] = useState<{ nodes: GraphNode[]; edges: GraphEdge[] }>({ nodes: [], edges: [] });
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedInfo, setSelectedInfo] = useState<string | null>(null);
+  const [topicFilter, setTopicFilter] = useState<string>("all");
 
   const focusSearchResult = useWorkspaceStore((s) => s.focusSearchResult);
+
+  // Re-build layout whenever topicFilter or rawGraphData changes
+  useEffect(() => {
+    if (rawGraphData.nodes.length > 0) {
+      const { nodes: fn, edges: fe } = buildFlowElements(
+        rawGraphData.nodes,
+        rawGraphData.edges,
+        topicFilter
+      );
+      setNodes(fn);
+      setEdges(fe);
+    }
+  }, [topicFilter, rawGraphData, setNodes, setEdges]);
 
   // Load document + existing graph on mount
   useEffect(() => {
@@ -223,18 +268,13 @@ export default function KnowledgeGraph() {
         ]);
         if (cancelled) return;
         setDoc(docDetail);
-        const { nodes: fn, edges: fe } = buildFlowElements(
-          graphData.nodes,
-          graphData.edges
-        );
-        setNodes(fn);
-        setEdges(fe);
+        setRawGraphData(graphData);
       } catch (err) {
         if (!cancelled)
           setError(
             axios.isAxiosError(err)
-              ? err.response?.data?.detail ?? "Failed to load."
-              : "Failed to load."
+              ? err.response?.data?.detail ?? "Failed to load graph."
+              : "Failed to load graph."
           );
       } finally {
         if (!cancelled) setLoading(false);
@@ -252,12 +292,7 @@ export default function KnowledgeGraph() {
     setError(null);
     try {
       const graphData = await generateGraph(id);
-      const { nodes: fn, edges: fe } = buildFlowElements(
-        graphData.nodes,
-        graphData.edges
-      );
-      setNodes(fn);
-      setEdges(fe);
+      setRawGraphData(graphData);
     } catch (err) {
       setError(
         axios.isAxiosError(err)
@@ -269,7 +304,6 @@ export default function KnowledgeGraph() {
     }
   }
 
-  // Click on a node → focus corresponding source page in PDF
   const onNodeClick: NodeMouseHandler = useCallback(
     (_event, node) => {
       const rawNode = node.data?.rawNode as GraphNode | undefined;
@@ -283,7 +317,6 @@ export default function KnowledgeGraph() {
     [focusSearchResult]
   );
 
-  // Click on an edge → focus the first justifying source page
   const onEdgeClick: EdgeMouseHandler = useCallback(
     (_event, edge) => {
       const rawEdge = edge.data?.rawEdge as GraphEdge | undefined;
@@ -297,6 +330,7 @@ export default function KnowledgeGraph() {
     [focusSearchResult]
   );
 
+  const topicsList = rawGraphData.nodes.filter((n) => n.node_type === "topic");
   const totalNodes = nodes.length;
   const totalEdges = edges.length;
 
@@ -327,17 +361,38 @@ export default function KnowledgeGraph() {
             Knowledge Graph — {doc?.title ?? ""}
           </h1>
           <p className="font-mono text-source-code text-on-surface-variant">
-            {totalNodes} nodes · {totalEdges} edges
-            {totalNodes === 0 && " · click 'Build Graph' to generate"}
+            Showing {totalNodes} nodes ({totalEdges} connections)
           </p>
         </div>
-        <button
-          onClick={handleGenerate}
-          disabled={generating}
-          className="hand-drawn-border bg-white px-5 py-2 font-label-caps text-label-caps hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-        >
-          {generating ? "Building..." : totalNodes === 0 ? "Build Graph" : "Rebuild Graph"}
-        </button>
+
+        {/* Filter & Action Controls */}
+        <div className="flex items-center gap-3">
+          {topicsList.length > 0 && (
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 border-2 border-on-surface rounded-lg shadow-sketch-sm">
+              <span className="font-label-caps text-xs text-on-surface-variant font-bold">Filter Topic:</span>
+              <select
+                value={topicFilter}
+                onChange={(e) => setTopicFilter(e.target.value)}
+                className="bg-transparent font-mono text-xs text-on-surface outline-none cursor-pointer font-semibold"
+              >
+                <option value="all">🌟 All Topics ({topicsList.length})</option>
+                {topicsList.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="hand-drawn-border bg-white px-5 py-2 font-label-caps text-label-caps hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+          >
+            {generating ? "Building..." : rawGraphData.nodes.length === 0 ? "Build Graph" : "Rebuild Graph"}
+          </button>
+        </div>
       </header>
 
       {error && (
@@ -354,7 +409,7 @@ export default function KnowledgeGraph() {
 
       {/* ── Graph canvas — cream paper background ────────────────────── */}
       <div className="flex-1 relative">
-        {totalNodes === 0 ? (
+        {rawGraphData.nodes.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-4 text-center bg-checkered">
             <span className="text-6xl">🕸️</span>
             <div className="bg-white hand-drawn-border shadow-sketch p-8 max-w-md">
@@ -376,7 +431,7 @@ export default function KnowledgeGraph() {
             onNodeClick={onNodeClick}
             onEdgeClick={onEdgeClick}
             fitView
-            fitViewOptions={{ padding: 0.15 }}
+            fitViewOptions={{ padding: 0.2 }}
             minZoom={0.2}
             maxZoom={2.5}
             colorMode="light"

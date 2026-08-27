@@ -61,9 +61,10 @@ EVENT_WEIGHTS: dict[str, float] = {
 }
 
 # Thresholds for heat levels
-THRESH_YELLOW = 1.0
-THRESH_ORANGE = 3.5
-THRESH_RED = 7.0
+THRESH_YELLOW = 0.4
+THRESH_ORANGE = 2.0
+THRESH_RED = 5.0
+
 
 MAX_TIME_BLOCKS = 5   # cap time_spent contribution at 5 × 30 s blocks
 
