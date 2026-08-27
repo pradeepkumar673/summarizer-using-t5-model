@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import model_validator
 
 
 class Settings(BaseSettings):
@@ -17,6 +18,15 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
     )
+
+    @model_validator(mode="after")
+    def _check_jwt_secret(self) -> "Settings":
+        if self.jwt_secret == "changeme":
+            raise ValueError(
+                "JWT_SECRET must be set to a strong random value in your .env file. "
+                "Do NOT use the default 'changeme' in any environment."
+            )
+        return self
 
 
 settings = Settings()

@@ -6,6 +6,10 @@ redis.connection.DEFAULT_RESP_VERSION = 2
 original_maint_init = redis.connection.MaintNotificationsConfig.__init__
 redis.connection.MaintNotificationsConfig.__init__ = lambda self, *args, **kwargs: original_maint_init(self, enabled=False)
 
+import torch
+# Limit PyTorch CPU threads to prevent 100% CPU system lockup
+torch.set_num_threads(4)
+
 from celery import Celery
 from config import settings
 
@@ -25,14 +29,19 @@ celery_app.conf.update(
     enable_utc=True,
     broker_transport_options={"protocol": 2},
     result_backend_transport_options={"protocol": 2},
+    task_acks_late=True,
+    worker_prefetch_multiplier=1,
 )
 
-# Force load T5 and sentence-transformer models when worker starts
+# Load T5 and sentence-transformer models when each WORKER PROCESS starts,
+# not when Celery config is applied (on_after_configure fires in the main
+# process, not in the forked worker — models loaded there are lost after fork).
+from celery.signals import worker_process_init
 from summarization_service import load_model as load_summarizer
 from embedding_service import load_model as load_embedder
 
-@celery_app.on_after_configure.connect
-def setup_periodic_tasks(sender, **kwargs):
+@worker_process_init.connect
+def load_models_in_worker(**kwargs):
     load_summarizer()
     load_embedder()
 

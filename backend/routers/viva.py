@@ -93,11 +93,13 @@ class QARound(BaseModel):
     difficulty: Difficulty
     answer: str
     evaluation: dict
+    overall_score: float = 0.0
     feedback: str
     missing_keywords: list[str]
     next_question: str | None
     source_page: int | None
     source_paragraph_id: int | None
+
 
 
 class SessionDetail(BaseModel):
@@ -270,6 +272,7 @@ async def start_viva(
         "topic_title": topic_title,
         "status": "active",
         "current_difficulty": difficulty,
+        "opening_question": first_question,   # stored so submit_answer can read it for round 1
         "rounds": [],
         "created_at": now,
         "updated_at": now,
@@ -476,7 +479,34 @@ async def submit_answer(
     )
 
 
+# ── GET /api/viva/document/{doc_id}/sessions ──────────────────────────────────
+# MUST be declared BEFORE /{session_id} so that "document" is NOT consumed as
+# a session_id path parameter by FastAPI's greedy route matching.
+
+@router.get("/document/{document_id}/sessions")
+async def list_sessions(
+    document_id: str,
+    current_user: UserPublic = Depends(get_current_user),
+):
+    sessions = await db.viva_sessions.find(
+        {"document_id": document_id, "user_id": current_user.id}
+    ).sort("created_at", -1).to_list(length=20)
+
+    return [
+        {
+            "id": str(s["_id"]),
+            "topic_title": s.get("topic_title", ""),
+            "status": s.get("status", "active"),
+            "rounds": len(s.get("rounds", [])),
+            "created_at": s["created_at"].isoformat(),
+        }
+        for s in sessions
+    ]
+
+
 # ── GET /api/viva/{session_id} ────────────────────────────────────────────────
+# Declared AFTER /document/{document_id}/sessions to avoid swallowing the
+# literal path segment "document" as a session_id.
 
 @router.get("/{session_id}", response_model=SessionDetail)
 async def get_session(
@@ -505,29 +535,3 @@ async def get_session(
         rounds=rounds,
         created_at=session["created_at"],
     )
-
-
-# ── GET /api/documents/{doc_id}/viva/sessions ─────────────────────────────────
-# Returns past viva sessions for a document (used in the session history list)
-
-from fastapi import APIRouter as _AR
-
-@router.get("/document/{document_id}/sessions")
-async def list_sessions(
-    document_id: str,
-    current_user: UserPublic = Depends(get_current_user),
-):
-    sessions = await db.viva_sessions.find(
-        {"document_id": document_id, "user_id": current_user.id}
-    ).sort("created_at", -1).to_list(length=20)
-
-    return [
-        {
-            "id": str(s["_id"]),
-            "topic_title": s.get("topic_title", ""),
-            "status": s.get("status", "active"),
-            "rounds": len(s.get("rounds", [])),
-            "created_at": s["created_at"].isoformat(),
-        }
-        for s in sessions
-    ]

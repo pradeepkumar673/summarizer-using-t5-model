@@ -34,43 +34,6 @@ def _safe_filename(title: str) -> str:
     return clean[:80] or "document"
 
 
-async def _gather_export_data(document_id: str, user_id: str) -> tuple[dict, list, list, dict]:
-    """
-    Returns (doc, topics, notebook_notes, exam_essentials_dict).
-    All DB fetches run concurrently-ish via sequential awaits (Motor is
-    async; each call is non-blocking while the event loop processes others).
-    """
-    doc_cursor = db.documents.find_one({"_id": (await db.documents.find_one({"_id": None}))})  # dummy
-    # Use the already-written helper instead
-    from bson import ObjectId
-    oid = ObjectId(document_id)
-    doc = await db.documents.find_one({"_id": oid})
-
-    topics = await db.topics.find(
-        {"document_id": document_id}
-    ).sort("order_index", 1).to_list(length=None)
-
-    notebook_notes = await db.notes.find(
-        {
-            "document_id": document_id,
-            "user_id": user_id,
-            "$or": [{"is_pinned": True}, {"edited_text": {"$nin": [None, ""]}}],
-        }
-    ).sort([("source_pages", 1), ("paragraph_id", 1)]).to_list(length=None)
-
-    raw_essentials = await db.exam_essentials.find(
-        {"document_id": document_id}
-    ).sort([("category", 1), ("source_page", 1)]).to_list(length=None)
-
-    exam_dict: dict[str, list] = {cat: [] for cat in ALL_CATEGORIES}
-    for e in raw_essentials:
-        cat = e.get("category")
-        if cat in exam_dict:
-            exam_dict[cat].append(e)
-
-    return doc, topics, notebook_notes, exam_dict
-
-
 @router.get("/{document_id}/export/markdown")
 async def export_markdown(
     document_id: str,

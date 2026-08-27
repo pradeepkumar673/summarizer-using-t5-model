@@ -1,6 +1,18 @@
 import api from "./client";
 
-export type DocumentStatus = "processing" | "ready" | "segmented" | "failed";
+export type DocumentStatus =
+  | "queued"
+  | "extracting"
+  | "segmenting"
+  | "segmented"
+  | "summarizing"
+  | "hierarchy"
+  | "embedding"
+  | "exam_essentials"
+  | "graph"
+  | "ready"
+  | "failed"
+  | "processing";
 
 export type DocumentPublic = {
   id: string;

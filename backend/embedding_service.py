@@ -7,7 +7,7 @@ go through the exact same model -- required for cosine similarity in
 ChromaDB to mean anything.
 """
 import logging
-
+import torch
 from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
@@ -22,9 +22,10 @@ def load_model() -> None:
     global _model
     if _model is not None:
         return
-    print(f"[embedding_service] Loading '{MODEL_NAME}'...")
-    _model = SentenceTransformer(MODEL_NAME)
-    print("[embedding_service] Embedding model loaded and ready.")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"[embedding_service] Loading '{MODEL_NAME}' on device={device}...")
+    _model = SentenceTransformer(MODEL_NAME, device=device)
+    print(f"[embedding_service] Embedding model loaded and ready on {device}.")
 
 
 def is_ready() -> bool:

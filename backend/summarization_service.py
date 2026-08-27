@@ -27,7 +27,9 @@ MAX_ROLLUP_DEPTH = 4  # hard ceiling so batch-of-batches can never loop forever
 
 _tokenizer: T5Tokenizer | None = None
 _model: T5ForConditionalGeneration | None = None
-_device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def get_device() -> torch.device:
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def load_model() -> None:
@@ -36,12 +38,13 @@ def load_model() -> None:
     if _model is not None and _tokenizer is not None:
         return
 
-    print(f"[summarization_service] Loading '{MODEL_NAME}' on device={_device}...")
+    device = get_device()
+    print(f"[summarization_service] Loading '{MODEL_NAME}' on device={device}...")
     _tokenizer = T5Tokenizer.from_pretrained(MODEL_NAME)
     _model = T5ForConditionalGeneration.from_pretrained(MODEL_NAME)
-    _model.to(_device)
+    _model.to(device)
     _model.eval()
-    print("[summarization_service] Model loaded and ready for inference.")
+    print(f"[summarization_service] Model loaded and ready for inference on {device}.")
 
 
 def is_ready() -> bool:
@@ -65,15 +68,16 @@ def summarize_text(text: str, max_length: int = 60, min_length: int = 10) -> str
     if not text:
         return ""
 
+    device = get_device()
     input_text = "summarize: " + text
     inputs = _tokenizer(
         input_text,
         return_tensors="pt",
         max_length=MAX_INPUT_TOKENS,
         truncation=True,
-    ).to(_device)
+    ).to(device)
 
-    with torch.no_grad():
+    with torch.inference_mode():
         output_ids = _model.generate(
             **inputs,
             max_length=max_length,
@@ -94,6 +98,7 @@ def summarize_text_batch(texts: list[str], max_length: int = 60, min_length: int
     if not texts:
         return []
 
+    device = get_device()
     # Clean and prefix texts
     prefixed = ["summarize: " + t.strip() for t in texts]
     
@@ -104,9 +109,9 @@ def summarize_text_batch(texts: list[str], max_length: int = 60, min_length: int
         truncation=True,
         padding=True,
         return_tensors="pt"
-    ).to(_device)
+    ).to(device)
 
-    with torch.no_grad():
+    with torch.inference_mode():
         output_ids = _model.generate(
             input_ids=inputs.input_ids,
             attention_mask=inputs.attention_mask,

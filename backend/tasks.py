@@ -36,7 +36,14 @@ async def _run_pipeline(document_id: str, self):
     # 1. Extract
     self.update_state(state="EXTRACTING", meta={"stage": "extracting"})
     await local_db.documents.update_one({"_id": ObjectId(document_id)}, {"$set": {"status": "extracting"}})
-    
+
+    # Wipe any data from a previous (failed/partial) run so retries are clean
+    await local_db.chunks.delete_many({"document_id": doc_id_str})
+    await local_db.topics.delete_many({"document_id": doc_id_str})
+    await local_db.notes.delete_many({"document_id": doc_id_str})
+    await local_db.exam_essentials.delete_many({"document_id": doc_id_str})
+    await local_db.knowledge_graphs.delete_many({"document_id": doc_id_str})
+
     total_pages, chunks = extract_blocks_from_pdf(file_path)
     if chunks:
         chunk_docs = [
@@ -108,9 +115,9 @@ async def _run_pipeline(document_id: str, self):
             valid_chunks.append(chunk)
             texts_to_summarize.append(text)
 
-        # Batch process the texts (batch size of 16)
+        # Batch process the texts (batch size of 32 for GPU acceleration)
         summaries = []
-        batch_size = 16
+        batch_size = 32
         for i in range(0, len(texts_to_summarize), batch_size):
             batch = texts_to_summarize[i : i + batch_size]
             batch_summaries = summarize_text_batch(batch, max_length=60, min_length=10)
